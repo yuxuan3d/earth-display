@@ -1,4 +1,5 @@
 [PLANS]
+- 2026-03-11T23:09:52.5300472+08:00 [USER] Requested repo publishing: link the project to a remote, commit if needed, and push it.
 - 2026-03-11T23:05:46.7860067+08:00 [USER] Follow-up adjustment: keep elevated terrain particles clipped to the globe silhouette at the limb, and make released rotation ease back toward the natural upright north-south axis.
 - 2026-03-11T22:52:27.4963473+08:00 [USER] Follow-up adjustment: set the latest particle-opacity/color/sun defaults, add a planet-color control, widen the glow-distance range, and expand particle blend-mode experimentation beyond the original four options.
 - 2026-03-11T22:42:13.0474249+08:00 [USER] Follow-up adjustment: lock the current tuned Leva values in as defaults, add a sun-falloff control for the lighting gradient, and add particle color plus blend-mode controls to experiment with better particle-to-body integration.
@@ -22,6 +23,7 @@
 - 2026-03-10T17:58:57+08:00 [USER] Follow-up adjustment: inspect the live experience with Playwright because earth rotation still felt unusable and the Fresnel shell appeared as a solid fill.
 
 [DECISIONS]
+- 2026-03-11T23:09:52.5300472+08:00 [CODE] The local repo was prepared by renaming the branch to main, but no remote will be invented because the workspace has no configured remote and no installed hosting CLI for creating one automatically.
 - 2026-03-11T23:05:46.7860067+08:00 [CODE] Elevated terrain particles now retain their radial geometry but lose visibility near the silhouette based on per-particle height and view angle, and the inertia loop now includes a spring-damped return toward the initial x-axis tilt so upright orientation is the resting state.
 - 2026-03-11T22:52:27.4963473+08:00 [CODE] Planet body color is now a runtime control, the glow-distance control now has a higher effective ceiling by expanding the billboard only beyond the prior default range, and particle blend-mode testing now includes screen/lighten/darken while omitting fake overlay/softlight modes that WebGL fixed-function blending cannot express honestly here.
 - 2026-03-11T22:42:13.0474249+08:00 [CODE] The user-tuned glow and sun-direction values are now the startup defaults, the body shader exposes sun falloff as a runtime control, and the particle layer now has runtime color plus blend-mode controls for look-dev without changing the geometry path.
@@ -50,6 +52,7 @@
 - 2026-03-10T17:58:57+08:00 [CODE] The globe now sits farther back and shifted right on wide screens, dragging can promote from an on-globe movement after a small threshold, and the Fresnel shell uses an additive front-side rim instead of a back-face fill.
 
 [PROGRESS]
+- 2026-03-11T23:09:52.5300472+08:00 [TOOL] Confirmed the repo already existed with a clean worktree, worked around the safe.directory restriction for inspection, elevated once to rename master to main, and verified there is still no remote configured.
 - 2026-03-11T23:05:46.7860067+08:00 [TOOL] Updated earthMath.ts, ParticleGlobe.tsx, debug.ts, EarthScene.tsx, App.tsx, config.ts, types.ts, and the Playwright smoke spec, then re-ran lint, unit tests, build, and a captured Playwright smoke run.
 - 2026-03-11T22:52:27.4963473+08:00 [TOOL] Updated App.tsx, EarthScene.tsx, PlanetBody.tsx, FresnelShell.tsx, and ParticleGlobe.tsx for the new defaults and controls, then re-ran lint, unit tests, build, and Playwright smoke coverage.
 - 2026-03-11T22:42:13.0474249+08:00 [TOOL] Updated App.tsx, EarthScene.tsx, PlanetBody.tsx, ParticleGlobe.tsx, and config.ts for the new defaults and controls, fixed the Leva blend-mode typing edge, and re-ran lint, unit tests, build, and Playwright smoke coverage.
@@ -75,6 +78,7 @@
 - 2026-03-10T17:58:57+08:00 [TOOL] Used Playwright-driven browser checks and screenshots to inspect the rendered scene, then updated the interaction and shell rendering and re-ran lint, unit tests, build, and Playwright smoke coverage.
 
 [DISCOVERIES]
+- 2026-03-11T23:09:52.5300472+08:00 [TOOL] GitHub CLI is not installed in this environment, and git operations against repo metadata require either per-command safe.directory overrides or elevated access because the repo is owned by a different Windows SID.
 - 2026-03-11T23:05:46.7860067+08:00 [TOOL] The floating-at-the-limb artifact came from genuine radial height offsets breaking the base sphere silhouette in projection; masking by terrain height and abs(viewNormal.z) fixed the outline without removing terrain relief on the face of the globe.
 - 2026-03-11T22:52:27.4963473+08:00 [TOOL] The previous glow-distance slider was visually capped by FresnelShell's fixed plane sizing and outer-radius clamp, so increasing the UI max alone would not have changed the render at higher values.
 - 2026-03-11T22:42:13.0474249+08:00 [TOOL] Leva's select control returned the chosen blend mode as a plain string at the call site, so App.tsx needed an explicit cast into the particle blend-mode union even though the available options are constrained.
@@ -101,6 +105,7 @@
 - 2026-03-10T17:58:57+08:00 [TOOL] Playwright screenshots showed that background drags were already changing `rotationY`, but the globe still felt wrong because the oversized layout left little visible background space and the back-face Fresnel shader rendered as a uniform cyan fill over the sphere.
 
 [OUTCOMES]
+- 2026-03-11T23:09:52.5300472+08:00 [TOOL] Local git is ready on main with the latest existing commit 480201b, but remote creation/linking and push remain blocked pending a destination remote URL or equivalent hosting access.
 - 2026-03-11T23:05:46.7860067+08:00 [CODE] Delivered silhouette-clipped elevated terrain and an eased upright-axis return after release while preserving drag inertia and the current visual tuning.
 - 2026-03-11T23:05:46.7860067+08:00 [TOOL] Verification passed with npm run lint, npm run test:unit, npm run build, and a Playwright smoke run with refreshed output/playwright/atmosphere-check.png.
 - 2026-03-11T22:52:27.4963473+08:00 [CODE] Delivered the new default look with live planet-color control, a wider usable glow-distance range, and additional real particle blend modes for look-dev exploration.
@@ -145,6 +150,7 @@
 - 2026-03-10T17:30:27+08:00 [TOOL] Verification passed again with `npm run lint`, `npm run test:unit`, `npm run build`, and `npm run test:e2e` after the responsive sizing change.
 - 2026-03-10T17:58:57+08:00 [CODE] Refined the experience using Playwright evidence so the rim light reads as a true edge glow, the globe no longer dominates the viewport, and rotation is easy to trigger from both background drags and deliberate on-globe drags.
 - 2026-03-10T17:58:57+08:00 [TOOL] Verification passed again with `npm run lint`, `npm run test:unit`, `npm run build`, and `npm run test:e2e` after the Playwright-guided fixes.
+
 
 
 
