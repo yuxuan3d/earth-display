@@ -1,4 +1,8 @@
 [PLANS]
+- 2026-03-11T17:30:08.3362094+08:00 [USER] Follow-up adjustment: stop the particle layer from changing opacity at certain rotation angles and keep the lower-opacity look consistently.
+- 2026-03-11T17:25:26.2492664+08:00 [USER] Follow-up adjustment: remove the visible dark seam between the earth limb and the outward atmosphere glow, and confirm the result with Playwright.
+- 2026-03-11T17:14:05.3127555+08:00 [USER] Follow-up adjustment: remove the shell-like atmosphere look so the glow reads as a soft outward bloom, and verify the result with Playwright.
+- 2026-03-11T09:58:31+08:00 [USER] Follow-up adjustment: tune the glow closer to the attached neon reference and confirm the look with Playwright before closing.
 - 2026-03-11T09:14:11+08:00 [USER] Follow-up adjustment: restore the particle visibility, make the atmosphere closer to the provided neon-glow reference, and verify the rendered result with Playwright.
 - 2026-03-10T22:44:43+08:00 [USER] Follow-up adjustment: the atmosphere glow is inverted and should radiate softly outward from the planet instead.
 - 2026-03-10T22:35:00+08:00 [USER] Follow-up adjustment: give the planet a clearer atmospheric glow and make the default terrainHeight value 0.05.
@@ -12,6 +16,10 @@
 - 2026-03-10T17:58:57+08:00 [USER] Follow-up adjustment: inspect the live experience with Playwright because earth rotation still felt unusable and the Fresnel shell appeared as a solid fill.
 
 [DECISIONS]
+- 2026-03-11T17:30:08.3362094+08:00 [CODE] The particle cloud now renders before the translucent planet body via explicit renderOrder, and the particle material opacity is reduced to 0.7 so the lower-opacity composite state stays stable across rotation.
+- 2026-03-11T17:25:26.2492664+08:00 [CODE] The atmosphere now overlaps slightly inside the silhouette while the filled globe body expands almost to the particle radius, which removes the limb gap without bringing back a visible shell.
+- 2026-03-11T17:14:05.3127555+08:00 [CODE] Supersedes the 2026-03-11T09:58:31+08:00 atmosphere pass: the glow now uses a camera-facing silhouette-distance shader instead of an offset bloom, so the atmosphere stays attached to the planet limb and fades outward.
+- 2026-03-11T09:58:31+08:00 [CODE] The globe body now uses a custom gradient shader and the atmosphere rim is light-biased so the left limb carries the brightest glow while the opposite side falls into a darker violet shadow.
 - 2026-03-11T09:14:11+08:00 [CODE] The atmosphere now combines a subtle filled globe body with a front-rim plus back-bloom shell, and Playwright verification uses a Windows-safe dedicated dev-server port plus an env-gated screenshot capture.
 - 2026-03-10T22:44:43+08:00 [CODE] Supersedes the 2026-03-10T22:35:00+08:00 shell tuning: the atmosphere now uses back-side additive halo shells masked by a depth-only occluder so the glow reads outside the planet silhouette instead of inside it.
 - 2026-03-10T22:35:00+08:00 [CODE] The atmospheric shell now layers a tight rim and a softer outer halo with additive front-side Fresnel shading, and the Leva terrain-height control now defaults to 0.05 via PARTICLE_GLOBE_CONFIG.
@@ -30,6 +38,10 @@
 - 2026-03-10T17:58:57+08:00 [CODE] The globe now sits farther back and shifted right on wide screens, dragging can promote from an on-globe movement after a small threshold, and the Fresnel shell uses an additive front-side rim instead of a back-face fill.
 
 [PROGRESS]
+- 2026-03-11T17:30:08.3362094+08:00 [TOOL] Updated src/components/ParticleGlobe.tsx and src/components/PlanetBody.tsx to pin transparent draw order and lower particle opacity, then re-ran lint, unit tests, build, and Playwright smoke coverage.
+- 2026-03-11T17:25:26.2492664+08:00 [TOOL] Increased the near-surface atmosphere contribution in src/components/FresnelShell.tsx, extended PlanetBody to 99.9% of the globe radius in src/components/EarthScene.tsx, and refreshed output/playwright/atmosphere-check.png after lint, unit, build, and Playwright verification.
+- 2026-03-11T17:14:05.3127555+08:00 [TOOL] Replaced the offset atmosphere billboard with a limb-distance glow in src/components/FresnelShell.tsx, retuned src/components/PlanetBody.tsx, and regenerated output/playwright/atmosphere-check.png after lint, unit, build, and Playwright checks passed.
+- 2026-03-11T09:58:31+08:00 [TOOL] Added src/components/PlanetBody.tsx, rewired EarthScene to use it, tuned FresnelShell colors and intensity, and iterated against fresh Playwright screenshots on port 4174 until the body gradient and limb glow were closer to the reference.
 - 2026-03-11T09:14:11+08:00 [TOOL] Added a translucent globe body in src/components/EarthScene.tsx, refined src/components/FresnelShell.tsx, updated playwright.config.ts to use npm.cmd on port 4174, and captured output/playwright/atmosphere-check.png through the smoke test.
 - 2026-03-10T22:44:43+08:00 [TOOL] Reworked src/components/FresnelShell.tsx from front-side rim layers to masked back-side halo layers and re-verified locally with lint, unit tests, build, and Playwright smoke coverage.
 - 2026-03-10T22:35:00+08:00 [TOOL] Updated src/components/FresnelShell.tsx to render a dual-layer atmosphere glow, changed src/config.ts terrainHeightScale default to 0.05, and re-verified locally after Docker remained unavailable.
@@ -45,6 +57,10 @@
 - 2026-03-10T17:58:57+08:00 [TOOL] Used Playwright-driven browser checks and screenshots to inspect the rendered scene, then updated the interaction and shell rendering and re-ran lint, unit tests, build, and Playwright smoke coverage.
 
 [DISCOVERIES]
+- 2026-03-11T17:30:08.3362094+08:00 [CODE] Because the land-only point cloud has an offset bounding sphere, transparent object sorting can flip against the centered planet body as the globe rotates; explicit renderOrder removes the apparent opacity popping.
+- 2026-03-11T17:25:26.2492664+08:00 [TOOL] The remaining seam was a combination of the halo cutoff starting too far outside the limb and the filled body stopping slightly too early; addressing both together removed the gap in Playwright captures.
+- 2026-03-11T17:14:05.3127555+08:00 [TOOL] The offset Gaussian approach always read as a detached shell or smear in Playwright screenshots; computing alpha from distance outside the planet silhouette produces the outward bloom the reference depends on.
+- 2026-03-11T09:58:31+08:00 [TOOL] The reference look depends more on a directional body gradient than on halo thickness alone; once the body shader introduced a lit-side and shadow-side split, further rim tweaks started reading correctly in Playwright captures.
 - 2026-03-11T09:14:11+08:00 [TOOL] The initial Playwright screenshots were stale because the runner could reuse an older Vite server; forcing a fresh webServer on port 4174 made the captured render match the current source.
 - 2026-03-10T22:44:43+08:00 [CODE] Front-side additive shells always read as an inward outline on this particle globe because there is no opaque planet surface; a depth-only occluder plus back-side halo geometry keeps the atmosphere outside the silhouette.
 - 2026-03-10T21:43:12+08:00 [TOOL] The installed Leva version replaces the older hideTitleBar prop with titleBar={false}; the production build still passes but now emits a chunk-size warning at about 1302 kB after adding Leva.
@@ -61,6 +77,14 @@
 - 2026-03-10T17:58:57+08:00 [TOOL] Playwright screenshots showed that background drags were already changing `rotationY`, but the globe still felt wrong because the oversized layout left little visible background space and the back-face Fresnel shader rendered as a uniform cyan fill over the sphere.
 
 [OUTCOMES]
+- 2026-03-11T17:30:08.3362094+08:00 [CODE] Removed the angle-dependent particle opacity jump by stabilizing the body-versus-particles render order and keeping the particles at a consistently softer opacity.
+- 2026-03-11T17:30:08.3362094+08:00 [TOOL] Verification passed with npm run lint, npm run test:unit, npm run build, and npm run test:e2e.
+- 2026-03-11T17:25:26.2492664+08:00 [CODE] Removed the visible gap between the planet edge and the atmosphere by overlapping the halo into the limb and extending the underlying body fill closer to the particle surface.
+- 2026-03-11T17:25:26.2492664+08:00 [TOOL] Verification passed with npm run lint, npm run test:unit, npm run build, and a Playwright smoke run that refreshed output/playwright/atmosphere-check.png.
+- 2026-03-11T17:14:05.3127555+08:00 [CODE] Delivered an atmosphere that blooms outward from the lit limb instead of reading as a second shell, while preserving particle visibility and the blue-violet body gradient.
+- 2026-03-11T17:14:05.3127555+08:00 [TOOL] Verification passed with npm run lint, npm run test:unit, npm run build, and a Playwright smoke run that refreshed output/playwright/atmosphere-check.png.
+- 2026-03-11T09:58:31+08:00 [CODE] Shifted the render toward the provided neon-globe reference with a blue-violet body gradient and a brighter light-biased atmospheric rim while keeping the particle globe readable.
+- 2026-03-11T09:58:31+08:00 [TOOL] Verification passed with npm run lint, npm run test:unit, npm run build, and a Playwright smoke run that refreshed output/playwright/atmosphere-check.png.
 - 2026-03-11T09:14:11+08:00 [CODE] Restored visible particles and moved the atmosphere toward the provided reference by pairing an outward halo with a translucent planet body under the point cloud.
 - 2026-03-11T09:14:11+08:00 [TOOL] Verification passed with npm run lint, npm run test:unit, npm run build, and a Playwright smoke run that saved output/playwright/atmosphere-check.png.
 - 2026-03-10T22:44:43+08:00 [CODE] Corrected the atmosphere rendering so the glow radiates outward as a soft halo rather than appearing inverted on the inside edge of the planet.
@@ -85,6 +109,10 @@
 - 2026-03-10T17:30:27+08:00 [TOOL] Verification passed again with `npm run lint`, `npm run test:unit`, `npm run build`, and `npm run test:e2e` after the responsive sizing change.
 - 2026-03-10T17:58:57+08:00 [CODE] Refined the experience using Playwright evidence so the rim light reads as a true edge glow, the globe no longer dominates the viewport, and rotation is easy to trigger from both background drags and deliberate on-globe drags.
 - 2026-03-10T17:58:57+08:00 [TOOL] Verification passed again with `npm run lint`, `npm run test:unit`, `npm run build`, and `npm run test:e2e` after the Playwright-guided fixes.
+
+
+
+
 
 
 

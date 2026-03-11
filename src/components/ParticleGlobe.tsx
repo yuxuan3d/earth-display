@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useTexture } from '@react-three/drei';
 import * as THREE from 'three';
@@ -134,7 +134,7 @@ export function ParticleGlobe({
   });
 
   return (
-    <points>
+    <points renderOrder={0}>
       <bufferGeometry ref={geometryRef} />
       <pointsMaterial
         color="#ffffff"
@@ -142,9 +142,10 @@ export function ParticleGlobe({
         sizeAttenuation
         depthWrite={false}
         transparent
-        opacity={0.9}
+        opacity={0.7}
         blending={THREE.AdditiveBlending}
       />
     </points>
   );
 }
+

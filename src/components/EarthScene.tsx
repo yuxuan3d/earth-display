@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { FresnelShell } from './FresnelShell';
+import { PlanetBody } from './PlanetBody';
 import { ParticleGlobe } from './ParticleGlobe';
 import { INTERACTION_CONFIG, PARTICLE_GLOBE_CONFIG } from '../config';
 import { getResponsiveSceneMetrics } from '../lib/sceneLayout';
@@ -169,21 +170,12 @@ export function EarthScene({
 
   return (
     <>
-      <ambientLight intensity={0.65} />
-      <directionalLight position={[4, 2, 5]} intensity={1.2} color="#b6d7ff" />
-      <directionalLight position={[-3, -2, -4]} intensity={0.55} color="#73ffd9" />
+      <ambientLight intensity={0.55} />
+      <directionalLight position={[4, 2, 5]} intensity={0.8} color="#b6d7ff" />
+      <directionalLight position={[-3, -2, -4]} intensity={0.3} color="#73ffd9" />
 
       <group ref={rigRef}>
-        <mesh renderOrder={0}>
-          <sphereGeometry args={[sceneMetrics.radius * 0.988, 96, 96]} />
-          <meshBasicMaterial
-            color="#152b80"
-            transparent
-            opacity={0.28}
-            depthWrite={false}
-            toneMapped={false}
-          />
-        </mesh>
+        <PlanetBody radius={sceneMetrics.radius * 0.999} />
         <ParticleGlobe
           hitPoint={activeHitPoint}
           velocity={activeVelocity}

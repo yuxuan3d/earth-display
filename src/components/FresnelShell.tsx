@@ -1,58 +1,79 @@
+import { Billboard, shaderMaterial } from '@react-three/drei';
 import { extend, type ThreeElement } from '@react-three/fiber';
-import { shaderMaterial } from '@react-three/drei';
 import * as THREE from 'three';
 
-const ATMOSPHERE_LIGHT_DIRECTION = new THREE.Vector3(-1, 0.18, 0.95).normalize();
+const ATMOSPHERE_GLOW_DIRECTION = new THREE.Vector2(-0.82, 0.58).normalize();
+const ATMOSPHERE_GLOW_CREST_DIRECTION = new THREE.Vector2(-0.62, 0.92).normalize();
 
-const FresnelMaterial = shaderMaterial(
+const AtmosphereGlowMaterial = shaderMaterial(
   {
-    color: new THREE.Color('#9ae6ff'),
-    rimPower: 2.3,
-    intensity: 1.2,
-    alphaStrength: 0.12,
-    lightDirection: ATMOSPHERE_LIGHT_DIRECTION,
-    lightMix: 0,
+    glowColor: new THREE.Color('#56b8ff'),
+    accentColor: new THREE.Color('#cbeeff'),
+    innerRadius: 0.74,
+    outerRadius: 1.0,
+    lightDirection: ATMOSPHERE_GLOW_DIRECTION,
+    crestDirection: ATMOSPHERE_GLOW_CREST_DIRECTION,
+    intensity: 1.0,
+    edgeSoftness: 1.0,
   },
   /* glsl */ `
-    varying vec3 vWorldNormal;
-    varying vec3 vViewDirection;
+    varying vec2 vUv;
 
     void main() {
-      vec4 worldPosition = modelMatrix * vec4(position, 1.0);
-      vWorldNormal = normalize(mat3(modelMatrix) * normal);
-      vViewDirection = normalize(cameraPosition - worldPosition.xyz);
-      gl_Position = projectionMatrix * viewMatrix * worldPosition;
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
     }
   `,
   /* glsl */ `
-    uniform vec3 color;
-    uniform float rimPower;
+    uniform vec3 glowColor;
+    uniform vec3 accentColor;
+    uniform float innerRadius;
+    uniform float outerRadius;
+    uniform vec2 lightDirection;
+    uniform vec2 crestDirection;
     uniform float intensity;
-    uniform float alphaStrength;
-    uniform vec3 lightDirection;
-    uniform float lightMix;
+    uniform float edgeSoftness;
 
-    varying vec3 vWorldNormal;
-    varying vec3 vViewDirection;
+    varying vec2 vUv;
 
     void main() {
-      vec3 normal = normalize(vWorldNormal);
-      float rim = 1.0 - abs(dot(normal, normalize(vViewDirection)));
-      float glow = pow(clamp(rim, 0.0, 1.0), rimPower);
-      float lightRim = pow(clamp(1.0 - max(dot(normal, normalize(lightDirection)), 0.0), 0.0, 1.0), 2.2);
-      float lighting = mix(1.0, 0.45 + lightRim * 0.9, lightMix);
-      glow *= lighting;
-      float alpha = glow * alphaStrength;
-      gl_FragColor = vec4(color * glow * intensity, alpha);
+      vec2 centered = vUv * 2.0 - 1.0;
+      float radius = length(centered);
+      float overlap = 0.04;
+
+      if (radius <= innerRadius - overlap || radius >= outerRadius) {
+        discard;
+      }
+
+      float haloWidth = max(outerRadius - innerRadius, 0.0001);
+      float outsideDistance = max(radius - innerRadius, 0.0) / haloWidth;
+      vec2 radialDirection = centered / max(radius, 0.0001);
+      float outsideMask = smoothstep(innerRadius - overlap, innerRadius + 0.008, radius);
+      float outerFade = 1.0 - smoothstep(outerRadius - 0.18, outerRadius, radius);
+      float directional = smoothstep(-0.22, 1.0, dot(radialDirection, normalize(lightDirection)));
+      float broadLight = pow(directional, 1.5);
+      float crest = pow(max(dot(radialDirection, normalize(crestDirection)), 0.0), 4.8);
+      float nearSurface = exp(-outsideDistance * (5.8 - edgeSoftness * 1.2));
+      float farBloom = exp(-outsideDistance * (2.3 + edgeSoftness * 0.45));
+      float alpha = outsideMask
+        * outerFade
+        * intensity
+        * (
+          farBloom * (0.028 + broadLight * 0.2)
+          + nearSurface * (0.03 + broadLight * 0.34 + crest * 0.28)
+        );
+      float accent = clamp(broadLight * 0.72 + crest * 0.85, 0.0, 1.0);
+      vec3 color = mix(glowColor, accentColor, accent);
+      gl_FragColor = vec4(color * alpha * 1.4, alpha);
     }
   `,
 );
 
-extend({ FresnelMaterial });
+extend({ AtmosphereGlowMaterial });
 
 declare module '@react-three/fiber' {
   interface ThreeElements {
-    fresnelMaterial: ThreeElement<typeof FresnelMaterial>;
+    atmosphereGlowMaterial: ThreeElement<typeof AtmosphereGlowMaterial>;
   }
 }
 
@@ -62,63 +83,30 @@ type FresnelShellProps = {
 };
 
 export function FresnelShell({ globeRadius, radius }: FresnelShellProps) {
+  const glowSize = Math.max(globeRadius * 2.7, radius * 2.58);
+  const normalizedInnerRadius = globeRadius / (glowSize * 0.5);
+  const normalizedOuterRadius = Math.min(0.985, normalizedInnerRadius + 0.19);
+
   return (
-    <>
-      <mesh renderOrder={1}>
-        <sphereGeometry args={[globeRadius * 0.982, 96, 96]} />
-        <meshBasicMaterial colorWrite={false} depthWrite />
-      </mesh>
-
+    <Billboard follow>
       <mesh renderOrder={2}>
-        <sphereGeometry args={[radius * 1.002, 96, 96]} />
-        <fresnelMaterial
-          color="#c8f6ff"
-          rimPower={6.2}
-          intensity={2.15}
-          alphaStrength={0.05}
-          lightDirection={ATMOSPHERE_LIGHT_DIRECTION}
-          lightMix={1}
+        <planeGeometry args={[glowSize, glowSize, 1, 1]} />
+        <atmosphereGlowMaterial
+          glowColor="#56b8ff"
+          accentColor="#cbeeff"
+          innerRadius={normalizedInnerRadius}
+          outerRadius={normalizedOuterRadius}
+          lightDirection={ATMOSPHERE_GLOW_DIRECTION}
+          crestDirection={ATMOSPHERE_GLOW_CREST_DIRECTION}
+          intensity={0.92}
+          edgeSoftness={1.05}
           transparent
           depthWrite={false}
-          side={THREE.FrontSide}
+          depthTest={false}
           blending={THREE.AdditiveBlending}
           toneMapped={false}
         />
       </mesh>
-
-      <mesh renderOrder={3}>
-        <sphereGeometry args={[radius * 1.008, 96, 96]} />
-        <fresnelMaterial
-          color="#8deeff"
-          rimPower={3.1}
-          intensity={0.95}
-          alphaStrength={0.055}
-          lightDirection={ATMOSPHERE_LIGHT_DIRECTION}
-          lightMix={0.35}
-          transparent
-          depthWrite={false}
-          side={THREE.BackSide}
-          blending={THREE.AdditiveBlending}
-          toneMapped={false}
-        />
-      </mesh>
-
-      <mesh renderOrder={4}>
-        <sphereGeometry args={[radius * 1.05, 96, 96]} />
-        <fresnelMaterial
-          color="#2ab9ff"
-          rimPower={1.75}
-          intensity={1.3}
-          alphaStrength={0.09}
-          lightDirection={ATMOSPHERE_LIGHT_DIRECTION}
-          lightMix={0.2}
-          transparent
-          depthWrite={false}
-          side={THREE.BackSide}
-          blending={THREE.AdditiveBlending}
-          toneMapped={false}
-        />
-      </mesh>
-    </>
+    </Billboard>
   );
 }
