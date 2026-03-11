@@ -1,9 +1,9 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState, useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { FresnelShell } from './FresnelShell';
 import { PlanetBody } from './PlanetBody';
-import { ParticleGlobe } from './ParticleGlobe';
+import { ParticleGlobe, type ParticleBlendMode } from './ParticleGlobe';
 import { INTERACTION_CONFIG, PARTICLE_GLOBE_CONFIG } from '../config';
 import { getResponsiveSceneMetrics } from '../lib/sceneLayout';
 import {
@@ -24,12 +24,32 @@ type EarthSceneProps = {
   rotation: SceneRotation;
   isBackgroundDragging: boolean;
   terrainHeightScale: number;
+  glowDistance: number;
+  glowStrength: number;
+  glowColor: string;
+  planetColor: string;
+  particleOpacity: number;
+  particleColor: string;
+  particleBlendMode: ParticleBlendMode;
+  sunDirection: [number, number, number];
+  sunFalloff: number;
 };
+
+const DEFAULT_SUN_DIRECTION = new THREE.Vector3(-0.11, 0.11, 0.11).normalize();
 
 export function EarthScene({
   rotation,
   isBackgroundDragging,
   terrainHeightScale,
+  glowDistance,
+  glowStrength,
+  glowColor,
+  planetColor,
+  particleOpacity,
+  particleColor,
+  particleBlendMode,
+  sunDirection,
+  sunFalloff,
 }: EarthSceneProps) {
   const { camera, gl, raycaster, size } = useThree();
   const rigRef = useRef<THREE.Group>(null);
@@ -40,6 +60,25 @@ export function EarthScene({
     () => getResponsiveSceneMetrics(size.width, size.height, PARTICLE_GLOBE_CONFIG),
     [size.height, size.width],
   );
+  const normalizedSunDirection = (() => {
+    const direction = new THREE.Vector3(...sunDirection);
+
+    if (direction.lengthSq() < 0.0001) {
+      return DEFAULT_SUN_DIRECTION.clone();
+    }
+
+    return direction.normalize();
+  })();
+  const sunLightPosition: [number, number, number] = [
+    normalizedSunDirection.x * 5,
+    normalizedSunDirection.y * 5,
+    normalizedSunDirection.z * 5,
+  ];
+  const fillLightPosition: [number, number, number] = [
+    -normalizedSunDirection.x * 3.2,
+    -normalizedSunDirection.y * 2.1,
+    -normalizedSunDirection.z * 3.2,
+  ];
   const [interaction, setInteraction] = useState<HoverInteractionState>({
     hitPoint: null,
     velocity: 0,
@@ -170,23 +209,40 @@ export function EarthScene({
 
   return (
     <>
-      <ambientLight intensity={0.55} />
-      <directionalLight position={[4, 2, 5]} intensity={0.8} color="#b6d7ff" />
-      <directionalLight position={[-3, -2, -4]} intensity={0.3} color="#73ffd9" />
+      <ambientLight intensity={0.52} />
+      <directionalLight position={sunLightPosition} intensity={0.82} color="#b6d7ff" />
+      <directionalLight position={fillLightPosition} intensity={0.22} color="#73ffd9" />
 
       <group ref={rigRef}>
-        <PlanetBody radius={sceneMetrics.radius * 0.999} />
+        <PlanetBody
+          radius={sceneMetrics.radius * 0.999}
+          planetColor={planetColor}
+          glowColor={glowColor}
+          sunDirection={sunDirection}
+          sunFalloff={sunFalloff}
+        />
         <ParticleGlobe
           hitPoint={activeHitPoint}
           velocity={activeVelocity}
           isDragging={isBackgroundDragging}
+          rotationX={rotation.x}
           rotationY={rotation.y}
           cameraZ={sceneMetrics.cameraZ}
           radius={sceneMetrics.radius}
           pointSize={sceneMetrics.pointSize}
           terrainHeightScale={terrainHeightScale}
+          particleOpacity={particleOpacity}
+          particleColor={particleColor}
+          particleBlendMode={particleBlendMode}
         />
-        <FresnelShell globeRadius={sceneMetrics.radius} radius={sceneMetrics.shellRadius} />
+        <FresnelShell
+          globeRadius={sceneMetrics.radius}
+          radius={sceneMetrics.shellRadius}
+          glowDistance={glowDistance}
+          glowStrength={glowStrength}
+          glowColor={glowColor}
+          sunDirection={sunDirection}
+        />
         <mesh ref={interactionMeshRef}>
           <sphereGeometry args={[sceneMetrics.radius, 48, 48]} />
           <meshBasicMaterial transparent opacity={0} depthWrite={false} />

@@ -3,6 +3,7 @@ declare global {
     __particleEarthDebug?: {
       particleCount: number;
       averageDisplacement: number;
+      rotationX: number;
       rotationY: number;
       cameraZ: number;
       pointerHitEarth: boolean;

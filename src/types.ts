@@ -1,4 +1,4 @@
-﻿export type ParticleGlobeConfig = {
+export type ParticleGlobeConfig = {
   radius: number;
   shellRadius: number;
   pointSize: number;
@@ -16,6 +16,11 @@ export type InteractionConfig = {
   velocitySmoothing: number;
   minimumVelocity: number;
   dragThreshold: number;
+  dragInertiaDamping: number;
+  minimumInertiaVelocity: number;
+  axisReturnStrength: number;
+  axisReturnDamping: number;
+  axisReturnAngleThreshold: number;
 };
 
 export type ResponsiveSceneMetrics = {
@@ -55,3 +60,4 @@ export type PointerVelocityState = {
   lastTime: number;
   speed: number;
 };
+

@@ -2,8 +2,8 @@ import { Billboard, shaderMaterial } from '@react-three/drei';
 import { extend, type ThreeElement } from '@react-three/fiber';
 import * as THREE from 'three';
 
-const ATMOSPHERE_GLOW_DIRECTION = new THREE.Vector2(-0.82, 0.58).normalize();
-const ATMOSPHERE_GLOW_CREST_DIRECTION = new THREE.Vector2(-0.62, 0.92).normalize();
+const DEFAULT_GLOW_DIRECTION = new THREE.Vector2(-0.82, 0.58).normalize();
+const BASE_GLOW_DISTANCE = 0.29;
 
 const AtmosphereGlowMaterial = shaderMaterial(
   {
@@ -11,8 +11,8 @@ const AtmosphereGlowMaterial = shaderMaterial(
     accentColor: new THREE.Color('#cbeeff'),
     innerRadius: 0.74,
     outerRadius: 1.0,
-    lightDirection: ATMOSPHERE_GLOW_DIRECTION,
-    crestDirection: ATMOSPHERE_GLOW_CREST_DIRECTION,
+    lightDirection: DEFAULT_GLOW_DIRECTION,
+    crestDirection: DEFAULT_GLOW_DIRECTION,
     intensity: 1.0,
     edgeSoftness: 1.0,
   },
@@ -80,25 +80,49 @@ declare module '@react-three/fiber' {
 type FresnelShellProps = {
   globeRadius: number;
   radius: number;
+  glowDistance: number;
+  glowStrength: number;
+  glowColor: string;
+  sunDirection: [number, number, number];
 };
 
-export function FresnelShell({ globeRadius, radius }: FresnelShellProps) {
-  const glowSize = Math.max(globeRadius * 2.7, radius * 2.58);
+export function FresnelShell({
+  globeRadius,
+  radius,
+  glowDistance,
+  glowStrength,
+  glowColor,
+  sunDirection,
+}: FresnelShellProps) {
+  const extraGlowReach = Math.max(0, glowDistance - BASE_GLOW_DISTANCE);
+  const glowSize = Math.max(
+    globeRadius * (2.7 + extraGlowReach * 3.2),
+    radius * (2.58 + extraGlowReach * 3.0),
+  );
   const normalizedInnerRadius = globeRadius / (glowSize * 0.5);
-  const normalizedOuterRadius = Math.min(0.985, normalizedInnerRadius + 0.19);
+  const normalizedOuterRadius = Math.min(0.998, normalizedInnerRadius + glowDistance);
+  const direction2D = new THREE.Vector2(sunDirection[0], sunDirection[1] + sunDirection[2] * 0.3);
+  const lightDirection = direction2D.lengthSq() < 0.0001
+    ? DEFAULT_GLOW_DIRECTION.clone()
+    : direction2D.normalize();
+  const crestVector = new THREE.Vector2(lightDirection.x * 0.72, lightDirection.y * 1.12 + 0.16);
+  const crestDirection = crestVector.lengthSq() < 0.0001
+    ? lightDirection.clone()
+    : crestVector.normalize();
+  const accentColor = new THREE.Color(glowColor).lerp(new THREE.Color('#ffffff'), 0.62);
 
   return (
     <Billboard follow>
       <mesh renderOrder={2}>
         <planeGeometry args={[glowSize, glowSize, 1, 1]} />
         <atmosphereGlowMaterial
-          glowColor="#56b8ff"
-          accentColor="#cbeeff"
+          glowColor={glowColor}
+          accentColor={accentColor}
           innerRadius={normalizedInnerRadius}
           outerRadius={normalizedOuterRadius}
-          lightDirection={ATMOSPHERE_GLOW_DIRECTION}
-          crestDirection={ATMOSPHERE_GLOW_CREST_DIRECTION}
-          intensity={0.92}
+          lightDirection={lightDirection}
+          crestDirection={crestDirection}
+          intensity={glowStrength}
           edgeSoftness={1.05}
           transparent
           depthWrite={false}

@@ -1,9 +1,10 @@
-﻿import * as THREE from 'three';
+import * as THREE from 'three';
 import type { MaskImageData, ParticleGlobeConfig, Vector3Like } from '../types';
 
 export type ParticleBuffers = {
   positions: Float32Array;
   basePositions: Float32Array;
+  heights: Float32Array;
   normals: Float32Array;
   seeds: Float32Array;
   count: number;
@@ -126,6 +127,7 @@ export function buildParticleBuffers(
   const acceptedPositions: number[] = [];
   const acceptedNormals: number[] = [];
   const acceptedSeeds: number[] = [];
+  const acceptedHeights: number[] = [];
 
   for (let index = 0; index < config.sampleCount; index += 1) {
     const point = fibonacciSpherePoint(index, config.sampleCount, config.radius);
@@ -136,7 +138,8 @@ export function buildParticleBuffers(
       continue;
     }
 
-    const elevatedPoint = point.clone().multiplyScalar(1 + height * config.terrainHeightScale);
+    const elevatedHeight = height * config.terrainHeightScale;
+    const elevatedPoint = point.clone().multiplyScalar(1 + elevatedHeight);
 
     acceptedPositions.push(elevatedPoint.x, elevatedPoint.y, elevatedPoint.z);
 
@@ -145,11 +148,13 @@ export function buildParticleBuffers(
 
     const seed = (Math.sin(index * 12.9898) + 1) * 0.5;
     acceptedSeeds.push(seed);
+    acceptedHeights.push(elevatedHeight);
   }
 
   return {
     positions: new Float32Array(acceptedPositions),
     basePositions: new Float32Array(acceptedPositions),
+    heights: new Float32Array(acceptedHeights),
     normals: new Float32Array(acceptedNormals),
     seeds: new Float32Array(acceptedSeeds),
     count: acceptedSeeds.length,

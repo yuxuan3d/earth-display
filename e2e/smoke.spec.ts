@@ -63,4 +63,26 @@ test('renders the particle earth and responds to hover and background drag', asy
   const afterBackgroundDrag = await page.evaluate(() => window.__particleEarthDebug);
   expect(afterBackgroundDrag?.rotationY).not.toBe(afterEarthDrag?.rotationY);
   expect(afterBackgroundDrag?.cameraZ).toBe(initial?.cameraZ);
+
+  await page.waitForTimeout(350);
+  const afterInertia = await page.evaluate(() => window.__particleEarthDebug);
+  expect(afterInertia?.rotationY).not.toBeCloseTo(afterBackgroundDrag?.rotationY ?? 0, 4);
+
+  const naturalRotationX = initial?.rotationX ?? -0.18;
+  await page.mouse.move(40, 40);
+  await page.mouse.down();
+  await page.mouse.move(80, 260, { steps: 12 });
+  await page.mouse.up();
+  await page.waitForTimeout(120);
+
+  const afterTiltDrag = await page.evaluate(() => window.__particleEarthDebug);
+  expect(Math.abs((afterTiltDrag?.rotationX ?? naturalRotationX) - naturalRotationX)).toBeGreaterThan(0.02);
+
+  await page.waitForTimeout(900);
+  const afterAxisReturn = await page.evaluate(() => window.__particleEarthDebug);
+  expect(
+    Math.abs((afterAxisReturn?.rotationX ?? naturalRotationX) - naturalRotationX),
+  ).toBeLessThan(
+    Math.abs((afterTiltDrag?.rotationX ?? naturalRotationX) - naturalRotationX),
+  );
 });

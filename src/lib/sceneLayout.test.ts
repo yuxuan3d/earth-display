@@ -1,4 +1,4 @@
-﻿import { PARTICLE_GLOBE_CONFIG } from '../config';
+import { PARTICLE_GLOBE_CONFIG } from '../config';
 import { getProjectedGlobeCircle, getResponsiveSceneMetrics } from './sceneLayout';
 
 describe('scene layout metrics', () => {
@@ -17,11 +17,11 @@ describe('scene layout metrics', () => {
     expect(metrics.pointSize).toBeGreaterThan(0);
   });
 
-  it('offsets the globe to the right on wider screens', () => {
+  it('keeps the globe centered on all viewports', () => {
     const desktop = getResponsiveSceneMetrics(1440, 900, PARTICLE_GLOBE_CONFIG);
     const mobile = getResponsiveSceneMetrics(390, 844, PARTICLE_GLOBE_CONFIG);
 
-    expect(desktop.offsetX).toBeGreaterThan(0);
+    expect(desktop.offsetX).toBe(0);
     expect(mobile.offsetX).toBe(0);
   });
 
@@ -31,7 +31,7 @@ describe('scene layout metrics', () => {
     const desktopCircle = getProjectedGlobeCircle(1440, 900, desktopMetrics);
     const mobileCircle = getProjectedGlobeCircle(390, 844, mobileMetrics);
 
-    expect(desktopCircle.centerX).toBeGreaterThan(720);
+    expect(desktopCircle.centerX).toBeCloseTo(720, 1);
     expect(desktopCircle.radius).toBeGreaterThan(0);
     expect(mobileCircle.centerX).toBeCloseTo(195, 1);
   });

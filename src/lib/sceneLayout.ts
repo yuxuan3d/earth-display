@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   ParticleGlobeConfig,
   ProjectedGlobeCircle,
   ResponsiveSceneMetrics,
@@ -33,18 +33,13 @@ export function getResponsiveSceneMetrics(
   const cameraZ = Number(
     (radius / (desiredViewportFraction * tanHalfFov * aspectFactor)).toFixed(4),
   );
-  const offsetX = Number(
-    (
-      safeViewport.width >= 1200 ? radius * 0.78 : safeViewport.width >= 900 ? radius * 0.36 : 0
-    ).toFixed(4),
-  );
 
   return {
     radius,
     shellRadius,
     pointSize,
     cameraZ,
-    offsetX,
+    offsetX: 0,
   };
 }
 
