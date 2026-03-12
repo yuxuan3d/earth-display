@@ -6,7 +6,6 @@ import { PARTICLE_GLOBE_CONFIG } from '../config';
 import { setDebugState } from '../lib/debug';
 import {
   buildParticleBuffers,
-  calculateDisplacementStrength,
   extractMaskImageData,
   type ParticleBuffers,
 } from '../lib/earthMath';
@@ -147,9 +146,6 @@ declare module '@react-three/fiber' {
 }
 
 type ParticleGlobeProps = {
-  hitPoint: THREE.Vector3 | null;
-  velocity: number;
-  isDragging: boolean;
   rotationX: number;
   rotationY: number;
   cameraZ: number;
@@ -162,9 +158,6 @@ type ParticleGlobeProps = {
 };
 
 export function ParticleGlobe({
-  hitPoint,
-  velocity,
-  isDragging,
   rotationX,
   rotationY,
   cameraZ,
@@ -177,7 +170,6 @@ export function ParticleGlobe({
 }: ParticleGlobeProps) {
   const geometryRef = useRef<THREE.BufferGeometry>(null);
   const particleBuffersRef = useRef<ParticleBuffers | null>(null);
-  const positionAttributeRef = useRef<THREE.BufferAttribute | null>(null);
   const elevationTexture = useTexture('/earth-elevation.png');
   const blendSettings = resolveBlendSettings(particleBlendMode);
 
@@ -195,9 +187,6 @@ export function ParticleGlobe({
     particleBuffersRef.current = particleBuffers;
 
     const positionAttribute = new THREE.BufferAttribute(particleBuffers.positions, 3);
-    positionAttribute.setUsage(THREE.DynamicDrawUsage);
-    positionAttributeRef.current = positionAttribute;
-
     const normalAttribute = new THREE.BufferAttribute(particleBuffers.normals, 3);
     const seedAttribute = new THREE.BufferAttribute(particleBuffers.seeds, 1);
     const heightAttribute = new THREE.BufferAttribute(particleBuffers.heights, 1);
@@ -212,76 +201,21 @@ export function ParticleGlobe({
     }
   }, [particleBuffers]);
 
-  useFrame((_, delta) => {
+  useFrame(() => {
     const buffers = particleBuffersRef.current;
-    const positionAttribute = positionAttributeRef.current;
 
-    if (!buffers || !positionAttribute) {
+    if (!buffers) {
       return;
     }
 
-    const positions = buffers.positions;
-    const basePositions = buffers.basePositions;
-    const normals = buffers.normals;
-    const seeds = buffers.seeds;
-    const relaxedVelocity = isDragging ? 0 : velocity;
-    let displacementSum = 0;
-
-    for (let index = 0; index < buffers.count; index += 1) {
-      const offset = index * 3;
-      const seed = seeds[index];
-      const baseX = basePositions[offset];
-      const baseY = basePositions[offset + 1];
-      const baseZ = basePositions[offset + 2];
-
-      let targetX = baseX;
-      let targetY = baseY;
-      let targetZ = baseZ;
-
-      if (hitPoint && relaxedVelocity > 0) {
-        const dx = baseX - hitPoint.x;
-        const dy = baseY - hitPoint.y;
-        const dz = baseZ - hitPoint.z;
-        const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-        const strength = calculateDisplacementStrength(
-          distance,
-          PARTICLE_GLOBE_CONFIG.hoverRadius,
-          relaxedVelocity,
-          PARTICLE_GLOBE_CONFIG,
-        );
-
-        if (strength > 0) {
-          const normalX = normals[offset];
-          const normalY = normals[offset + 1];
-          const normalZ = normals[offset + 2];
-          const variation = 0.85 + seed * 0.5;
-          targetX += normalX * strength * variation;
-          targetY += normalY * strength * variation;
-          targetZ += normalZ * strength * variation;
-        }
-      }
-
-      const easing = Math.min(1, delta * (PARTICLE_GLOBE_CONFIG.recoveryDamping + seed));
-      positions[offset] += (targetX - positions[offset]) * easing;
-      positions[offset + 1] += (targetY - positions[offset + 1]) * easing;
-      positions[offset + 2] += (targetZ - positions[offset + 2]) * easing;
-
-      const diffX = positions[offset] - baseX;
-      const diffY = positions[offset + 1] - baseY;
-      const diffZ = positions[offset + 2] - baseZ;
-      displacementSum += Math.sqrt(diffX * diffX + diffY * diffY + diffZ * diffZ);
-    }
-
-    positionAttribute.needsUpdate = true;
-
     setDebugState({
       particleCount: buffers.count,
-      averageDisplacement: buffers.count > 0 ? displacementSum / buffers.count : 0,
+      averageDisplacement: 0,
       rotationX,
       rotationY,
       cameraZ,
-      pointerHitEarth: Boolean(hitPoint),
-      velocity: relaxedVelocity,
+      pointerHitEarth: false,
+      velocity: 0,
     });
   });
 
@@ -303,3 +237,4 @@ export function ParticleGlobe({
     </points>
   );
 }
+

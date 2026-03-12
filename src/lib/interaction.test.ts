@@ -1,7 +1,6 @@
 import {
   createInitialVelocityState,
   decayVelocity,
-  shouldStartRotateDrag,
   updatePointerVelocity,
 } from './interaction';
 
@@ -20,10 +19,5 @@ describe('interaction helpers', () => {
   it('decays the current velocity toward zero', () => {
     expect(decayVelocity(0.8, 0.1, 2)).toBeCloseTo(0.6);
     expect(decayVelocity(0.1, 1, 1)).toBe(0);
-  });
-
-  it('starts a rotate drag only when pointer down begins outside the earth', () => {
-    expect(shouldStartRotateDrag(false)).toBe(true);
-    expect(shouldStartRotateDrag(true)).toBe(false);
   });
 });

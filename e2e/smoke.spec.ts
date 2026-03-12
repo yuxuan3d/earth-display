@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { PARTICLE_GLOBE_CONFIG } from '../src/config';
 import { getProjectedGlobeCircle, getResponsiveSceneMetrics } from '../src/lib/sceneLayout';
 
-test('renders the particle earth and responds to hover and background drag', async ({ page }) => {
+test('renders the particle earth and allows drag rotation from the globe surface', async ({ page }) => {
   await page.goto('/');
   await page.waitForFunction(() => {
     return Boolean(window.__particleEarthDebug?.particleCount);
@@ -39,9 +39,8 @@ test('renders the particle earth and responds to hover and background drag', asy
   await page.waitForTimeout(150);
 
   const afterHover = await page.evaluate(() => window.__particleEarthDebug);
-  expect(afterHover?.averageDisplacement ?? 0).toBeGreaterThan(
-    initial?.averageDisplacement ?? 0,
-  );
+  expect(afterHover?.averageDisplacement ?? 0).toBe(0);
+  expect(afterHover?.rotationY).toBeCloseTo(initial?.rotationY ?? 0, 5);
 
   await page.mouse.move(projectedGlobe.centerX, projectedGlobe.centerY);
   await page.mouse.down();
@@ -52,7 +51,10 @@ test('renders the particle earth and responds to hover and background drag', asy
   await page.waitForTimeout(150);
 
   const afterEarthDrag = await page.evaluate(() => window.__particleEarthDebug);
-  expect(afterEarthDrag?.rotationY).toBeCloseTo(afterHover?.rotationY ?? initial?.rotationY ?? 0, 5);
+  expect(afterEarthDrag?.rotationY).not.toBeCloseTo(
+    afterHover?.rotationY ?? initial?.rotationY ?? 0,
+    4,
+  );
 
   await page.mouse.move(40, 40);
   await page.mouse.down();

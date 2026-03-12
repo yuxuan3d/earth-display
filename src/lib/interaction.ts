@@ -37,7 +37,3 @@ export function updatePointerVelocity(
 export function decayVelocity(speed: number, deltaSeconds: number, damping: number) {
   return Math.max(0, speed - deltaSeconds * damping);
 }
-
-export function shouldStartRotateDrag(pointerDownHitEarth: boolean) {
-  return !pointerDownHitEarth;
-}

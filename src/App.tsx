@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import type {
   MouseEvent as ReactMouseEvent,
   PointerEvent as ReactPointerEvent,
@@ -8,8 +8,6 @@ import { Leva, useControls } from 'leva';
 import { EarthScene } from './components/EarthScene';
 import type { ParticleBlendMode } from './components/ParticleGlobe';
 import { INTERACTION_CONFIG, PARTICLE_GLOBE_CONFIG } from './config';
-import { shouldStartRotateDrag } from './lib/interaction';
-import { getProjectedGlobeCircle, getResponsiveSceneMetrics } from './lib/sceneLayout';
 import type { SceneRotation } from './types';
 
 type SceneFrameSize = {
@@ -65,7 +63,7 @@ export default function App() {
       step: 0.005,
     },
     glowDistance: {
-      value: 0.29,
+      value: 0.51,
       min: 0.08,
       max: 0.6,
       step: 0.005,
@@ -98,7 +96,7 @@ export default function App() {
       },
     },
     sunX: {
-      value: -0.11,
+      value: -0.1,
       min: -2,
       max: 2,
       step: 0.01,
@@ -116,25 +114,12 @@ export default function App() {
       step: 0.01,
     },
     sunFalloff: {
-      value: 1.2,
+      value: 1.56,
       min: 0.35,
       max: 3,
       step: 0.01,
     },
   });
-  const sceneMetrics = useMemo(
-    () =>
-      getResponsiveSceneMetrics(
-        sceneFrameSize.width,
-        sceneFrameSize.height,
-        PARTICLE_GLOBE_CONFIG,
-      ),
-    [sceneFrameSize.height, sceneFrameSize.width],
-  );
-  const projectedGlobe = useMemo(
-    () => getProjectedGlobeCircle(sceneFrameSize.width, sceneFrameSize.height, sceneMetrics),
-    [sceneFrameSize.height, sceneFrameSize.width, sceneMetrics],
-  );
 
   const applyRotation = (updater: (current: SceneRotation) => SceneRotation) => {
     setRotation((current) => {
@@ -296,23 +281,6 @@ export default function App() {
     stopInertia();
     inertiaVelocityRef.current = { ...ZERO_ROTATION };
 
-    const sceneFrame = sceneFrameRef.current;
-    if (!sceneFrame) {
-      return false;
-    }
-
-    const rect = sceneFrame.getBoundingClientRect();
-    const localX = clientX - rect.left;
-    const localY = clientY - rect.top;
-    const distanceFromGlobe = Math.hypot(
-      localX - projectedGlobe.centerX,
-      localY - projectedGlobe.centerY,
-    );
-    const pointerStartedOnEarth = distanceFromGlobe <= projectedGlobe.radius;
-
-    if (!shouldStartRotateDrag(pointerStartedOnEarth)) {
-      return false;
-    }
 
     dragStateRef.current = {
       input,
@@ -452,7 +420,6 @@ export default function App() {
           <Suspense fallback={null}>
             <EarthScene
               rotation={rotation}
-              isBackgroundDragging={isBackgroundDragging}
               terrainHeightScale={terrainHeight}
               glowDistance={glowDistance}
               glowStrength={glowStrength}
@@ -470,6 +437,10 @@ export default function App() {
     </main>
   );
 }
+
+
+
+
 
 
 
