@@ -53,6 +53,12 @@ export default function App() {
     particleSeparation,
     particleColor,
     particleBlendMode,
+    cityGlowColor,
+    cityGlowSize,
+    cityGlowStrength,
+    cityGlowSizeVariance,
+    singaporeGlowSize,
+    singaporeGlowStrength,
     sunX,
     sunY,
     sunZ,
@@ -108,6 +114,37 @@ export default function App() {
         Multiply: 'multiply',
         Subtractive: 'subtractive',
       },
+    },
+    cityGlowColor: '#56b8ff',
+    cityGlowSize: {
+      value: 1,
+      min: 0.35,
+      max: 2.2,
+      step: 0.01,
+    },
+    cityGlowStrength: {
+      value: 0.9,
+      min: 0,
+      max: 2.2,
+      step: 0.01,
+    },
+    cityGlowSizeVariance: {
+      value: 1,
+      min: 0,
+      max: 2,
+      step: 0.01,
+    },
+    singaporeGlowSize: {
+      value: 1,
+      min: 0.2,
+      max: 3,
+      step: 0.01,
+    },
+    singaporeGlowStrength: {
+      value: 1,
+      min: 0,
+      max: 3,
+      step: 0.01,
     },
     sunX: {
       value: -0.1,
@@ -429,7 +466,6 @@ export default function App() {
           dpr={[1, 1.75]}
           gl={{ antialias: true, alpha: true }}
         >
-          <color attach="background" args={['#050816']} />
           <fog attach="fog" args={['#050816', 4.5, 9]} />
           <Suspense fallback={null}>
             <EarthScene
@@ -444,6 +480,12 @@ export default function App() {
               particleSeparation={particleSeparation}
               particleColor={particleColor}
               particleBlendMode={particleBlendMode as ParticleBlendMode}
+              cityGlowColor={cityGlowColor}
+              cityGlowSize={cityGlowSize}
+              cityGlowStrength={cityGlowStrength}
+              cityGlowSizeVariance={cityGlowSizeVariance}
+              singaporeGlowSize={singaporeGlowSize}
+              singaporeGlowStrength={singaporeGlowStrength}
               sunDirection={[sunX, sunY, sunZ]}
               sunFalloff={sunFalloff}
             />
@@ -453,6 +495,9 @@ export default function App() {
     </main>
   );
 }
+
+
+
 
 
 

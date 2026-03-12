@@ -1,7 +1,8 @@
-﻿import {
+import {
   buildParticleBuffers,
   calculateDisplacementStrength,
   isLandAtUv,
+  latLonToPoint,
   pointToUv,
   sampleMaskPixel,
   sampleTerrainHeight,
@@ -38,10 +39,18 @@ function averageRadius(positions: Float32Array) {
   return count > 0 ? total / count : 0;
 }
 
+const roundVector = (values: number[]) => values.map((value) => (Math.abs(value) < 0.00001 ? 0 : Number(value.toFixed(5))));
+
 describe('earthMath helpers', () => {
   it('maps equator points to the expected uv values', () => {
     expect(pointToUv({ x: 1, y: 0, z: 0 })).toEqual({ u: 0.5, v: 0.5 });
     expect(pointToUv({ x: 0, y: 1, z: 0 })).toEqual({ u: 0.5, v: 0 });
+  });
+
+  it('maps latitude and longitude to the expected world axes', () => {
+    expect(roundVector(latLonToPoint(0, 0, 1).toArray())).toEqual([1, 0, 0]);
+    expect(roundVector(latLonToPoint(0, 90, 1).toArray())).toEqual([0, 0, -1]);
+    expect(roundVector(latLonToPoint(90, 45, 1).toArray())).toEqual([0, 1, 0]);
   });
 
   it('samples the elevation pixel using wrapped u coordinates', () => {
@@ -116,3 +125,6 @@ describe('earthMath helpers', () => {
     expect(buffers.count).toBe(0);
   });
 });
+
+
+

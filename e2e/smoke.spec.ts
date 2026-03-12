@@ -10,6 +10,7 @@ test('renders the particle earth and allows drag rotation from the globe surface
 
   const initial = await page.evaluate(() => window.__particleEarthDebug);
   expect(initial?.particleCount ?? 0).toBeGreaterThan(1000);
+  expect(initial?.cityBeaconCount ?? 0).toBeGreaterThan(10);
 
   if (process.env.PLAYWRIGHT_CAPTURE === '1') {
     await page.waitForTimeout(800);

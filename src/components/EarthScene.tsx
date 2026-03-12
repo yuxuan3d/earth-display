@@ -1,6 +1,7 @@
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
+import { CityBeacons } from './CityBeacons';
 import { FresnelShell } from './FresnelShell';
 import { PlanetBody } from './PlanetBody';
 import { ParticleGlobe, type ParticleBlendMode } from './ParticleGlobe';
@@ -20,6 +21,12 @@ type EarthSceneProps = {
   particleSeparation: number;
   particleColor: string;
   particleBlendMode: ParticleBlendMode;
+  cityGlowColor: string;
+  cityGlowSize: number;
+  cityGlowStrength: number;
+  cityGlowSizeVariance: number;
+  singaporeGlowSize: number;
+  singaporeGlowStrength: number;
   sunDirection: [number, number, number];
   sunFalloff: number;
 };
@@ -38,6 +45,12 @@ export function EarthScene({
   particleSeparation,
   particleColor,
   particleBlendMode,
+  cityGlowColor,
+  cityGlowSize,
+  cityGlowStrength,
+  cityGlowSizeVariance,
+  singaporeGlowSize,
+  singaporeGlowStrength,
   sunDirection,
   sunFalloff,
 }: EarthSceneProps) {
@@ -105,6 +118,15 @@ export function EarthScene({
           particleSeparation={particleSeparation}
           particleColor={particleColor}
           particleBlendMode={particleBlendMode}
+        />
+        <CityBeacons
+          radius={sceneMetrics.radius}
+          glowColor={cityGlowColor}
+          glowSize={cityGlowSize}
+          glowStrength={cityGlowStrength}
+          sizeVariance={cityGlowSizeVariance}
+          singaporeGlowSize={singaporeGlowSize}
+          singaporeGlowStrength={singaporeGlowStrength}
         />
         <FresnelShell
           globeRadius={sceneMetrics.radius}

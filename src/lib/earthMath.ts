@@ -28,13 +28,29 @@ export function fibonacciSpherePoint(
   );
 }
 
+export function latLonToPoint(
+  latitude: number,
+  longitude: number,
+  radius: number,
+): THREE.Vector3 {
+  const latitudeRadians = THREE.MathUtils.degToRad(latitude);
+  const longitudeRadians = THREE.MathUtils.degToRad(longitude);
+  const cosLatitude = Math.cos(latitudeRadians);
+
+  return new THREE.Vector3(
+    Math.cos(longitudeRadians) * cosLatitude * radius,
+    Math.sin(latitudeRadians) * radius,
+    -Math.sin(longitudeRadians) * cosLatitude * radius,
+  );
+}
+
 export function pointToUv(point: Vector3Like) {
   const length = Math.sqrt(point.x ** 2 + point.y ** 2 + point.z ** 2) || 1;
   const nx = point.x / length;
   const ny = point.y / length;
   const nz = point.z / length;
 
-  const u = 0.5 + Math.atan2(nz, nx) / (Math.PI * 2);
+  const u = 0.5 + Math.atan2(-nz, nx) / (Math.PI * 2);
   const v = 0.5 - Math.asin(THREE.MathUtils.clamp(ny, -1, 1)) / Math.PI;
 
   return { u, v };
@@ -160,3 +176,4 @@ export function buildParticleBuffers(
     count: acceptedSeeds.length,
   };
 }
+
