@@ -29,6 +29,10 @@ type ParticleBlendSettings = {
   blendEquationAlpha?: THREE.BlendingEquation;
 };
 
+const MIN_POINT_SIZE = 1.55;
+const MIN_SAMPLE_COUNT = 12_000;
+const MAX_SAMPLE_COUNT = 140_000;
+
 const GlobeParticleMaterial = shaderMaterial(
   {
     color: new THREE.Color('#afc9ff'),
@@ -36,7 +40,7 @@ const GlobeParticleMaterial = shaderMaterial(
     pointScale: 338,
     frontOpacity: 0.8,
     backOpacity: 0.096,
-    minPointSize: 1.55,
+    minPointSize: MIN_POINT_SIZE,
   },
   /* glsl */ `
     uniform float pointSize;
@@ -137,6 +141,13 @@ const resolveBlendSettings = (mode: ParticleBlendMode): ParticleBlendSettings =>
   }
 };
 
+function resolveParticleSampleCount(baseSampleCount: number, particleSeparation: number) {
+  const safeSeparation = Math.max(0.01, particleSeparation);
+  const densityAdjustedCount = Math.round(baseSampleCount / (safeSeparation * safeSeparation));
+
+  return THREE.MathUtils.clamp(densityAdjustedCount, MIN_SAMPLE_COUNT, MAX_SAMPLE_COUNT);
+}
+
 extend({ GlobeParticleMaterial });
 
 declare module '@react-three/fiber' {
@@ -153,6 +164,8 @@ type ParticleGlobeProps = {
   pointSize: number;
   terrainHeightScale: number;
   particleOpacity: number;
+  particleSizeScale: number;
+  particleSeparation: number;
   particleColor: string;
   particleBlendMode: ParticleBlendMode;
 };
@@ -165,6 +178,8 @@ export function ParticleGlobe({
   pointSize,
   terrainHeightScale,
   particleOpacity,
+  particleSizeScale,
+  particleSeparation,
   particleColor,
   particleBlendMode,
 }: ParticleGlobeProps) {
@@ -172,16 +187,22 @@ export function ParticleGlobe({
   const particleBuffersRef = useRef<ParticleBuffers | null>(null);
   const elevationTexture = useTexture('/earth-elevation.png');
   const blendSettings = resolveBlendSettings(particleBlendMode);
+  const sampleCount = useMemo(
+    () => resolveParticleSampleCount(PARTICLE_GLOBE_CONFIG.sampleCount, particleSeparation),
+    [particleSeparation],
+  );
+  const effectivePointSize = pointSize * particleSizeScale;
+  const effectiveMinPointSize = Math.max(0.7, MIN_POINT_SIZE * particleSizeScale);
 
   const particleBuffers = useMemo(() => {
     const elevationMap = extractMaskImageData(elevationTexture);
     return buildParticleBuffers(elevationMap, {
       radius,
-      sampleCount: PARTICLE_GLOBE_CONFIG.sampleCount,
+      sampleCount,
       landThreshold: PARTICLE_GLOBE_CONFIG.landThreshold,
       terrainHeightScale,
     });
-  }, [elevationTexture, radius, terrainHeightScale]);
+  }, [elevationTexture, radius, sampleCount, terrainHeightScale]);
 
   useEffect(() => {
     particleBuffersRef.current = particleBuffers;
@@ -224,11 +245,11 @@ export function ParticleGlobe({
       <bufferGeometry ref={geometryRef} />
       <globeParticleMaterial
         color={particleColor}
-        pointSize={pointSize}
+        pointSize={effectivePointSize}
         pointScale={338}
         frontOpacity={particleOpacity}
         backOpacity={Math.max(0.02, particleOpacity * 0.12)}
-        minPointSize={1.55}
+        minPointSize={effectiveMinPointSize}
         transparent
         depthWrite={false}
         toneMapped={false}
@@ -237,4 +258,3 @@ export function ParticleGlobe({
     </points>
   );
 }
-

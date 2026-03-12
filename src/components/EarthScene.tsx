@@ -16,6 +16,8 @@ type EarthSceneProps = {
   glowColor: string;
   planetColor: string;
   particleOpacity: number;
+  particleSizeScale: number;
+  particleSeparation: number;
   particleColor: string;
   particleBlendMode: ParticleBlendMode;
   sunDirection: [number, number, number];
@@ -32,6 +34,8 @@ export function EarthScene({
   glowColor,
   planetColor,
   particleOpacity,
+  particleSizeScale,
+  particleSeparation,
   particleColor,
   particleBlendMode,
   sunDirection,
@@ -97,6 +101,8 @@ export function EarthScene({
           pointSize={sceneMetrics.pointSize}
           terrainHeightScale={terrainHeightScale}
           particleOpacity={particleOpacity}
+          particleSizeScale={particleSizeScale}
+          particleSeparation={particleSeparation}
           particleColor={particleColor}
           particleBlendMode={particleBlendMode}
         />

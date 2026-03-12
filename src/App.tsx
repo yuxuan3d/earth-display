@@ -49,6 +49,8 @@ export default function App() {
     glowColor,
     planetColor,
     particleOpacity,
+    particleSize,
+    particleSeparation,
     particleColor,
     particleBlendMode,
     sunX,
@@ -80,6 +82,18 @@ export default function App() {
       value: 0.8,
       min: 0.1,
       max: 1,
+      step: 0.01,
+    },
+    particleSize: {
+      value: 2.4,
+      min: 0.7,
+      max: 2.4,
+      step: 0.01,
+    },
+    particleSeparation: {
+      value: 1.4,
+      min: 0.7,
+      max: 2.5,
       step: 0.01,
     },
     particleColor: '#afc9ff',
@@ -426,6 +440,8 @@ export default function App() {
               glowColor={glowColor}
               planetColor={planetColor}
               particleOpacity={particleOpacity}
+              particleSizeScale={particleSize}
+              particleSeparation={particleSeparation}
               particleColor={particleColor}
               particleBlendMode={particleBlendMode as ParticleBlendMode}
               sunDirection={[sunX, sunY, sunZ]}
@@ -437,6 +453,10 @@ export default function App() {
     </main>
   );
 }
+
+
+
+
 
 
 
