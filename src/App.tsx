@@ -1,4 +1,5 @@
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 import type {
   MouseEvent as ReactMouseEvent,
   PointerEvent as ReactPointerEvent,
@@ -33,15 +34,33 @@ const EMPTY_FRAME_SIZE: SceneFrameSize = { width: 0, height: 0 };
 const ZERO_ROTATION: SceneRotation = { x: 0, y: 0 };
 
 export default function App() {
+  const searchParams =
+    typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const isEmbedMode = searchParams?.get('embed') === '1';
+  const isMobileMode = searchParams?.get('mobile') === '1';
+  const particleOpacityDefault = isMobileMode ? 0.58 : 0.64;
+  const particleSizeDefault = isMobileMode ? 1.9 : 2.4;
+  const particleSeparationDefault = isMobileMode ? 1.8 : 1.4;
   const sceneFrameRef = useRef<HTMLDivElement>(null);
   const dragStateRef = useRef<ActiveDrag | null>(null);
   const inertiaVelocityRef = useRef<SceneRotation>({ ...ZERO_ROTATION });
   const inertiaFrameRef = useRef<number | null>(null);
   const inertiaLastTimeRef = useRef<number | null>(null);
+  const autoRotateFrameRef = useRef<number | null>(null);
+  const autoRotateLastTimeRef = useRef<number | null>(null);
   const [sceneFrameSize, setSceneFrameSize] = useState<SceneFrameSize>(EMPTY_FRAME_SIZE);
   const [rotation, setRotation] = useState<SceneRotation>(INITIAL_ROTATION);
   const rotationRef = useRef<SceneRotation>({ ...INITIAL_ROTATION });
   const [isBackgroundDragging, setIsBackgroundDragging] = useState(false);
+  const { heroGradientColor, heroGradientLength } = useControls('Hero Background', {
+    heroGradientColor: '#0d3b8b',
+    heroGradientLength: {
+      value: 64,
+      min: 8,
+      max: 100,
+      step: 1,
+    },
+  });
   const {
     terrainHeight,
     glowDistance,
@@ -63,7 +82,7 @@ export default function App() {
     sunY,
     sunZ,
     sunFalloff,
-  } = useControls({
+  } = useControls('Particle Globe', {
     terrainHeight: {
       value: PARTICLE_GLOBE_CONFIG.terrainHeightScale,
       min: 0,
@@ -83,21 +102,21 @@ export default function App() {
       step: 0.01,
     },
     glowColor: '#56b8ff',
-    planetColor: '#4d63ff',
+    planetColor: '#1e9aff',
     particleOpacity: {
-      value: 0.8,
+      value: particleOpacityDefault,
       min: 0.1,
       max: 1,
       step: 0.01,
     },
     particleSize: {
-      value: 2.4,
+      value: particleSizeDefault,
       min: 0.7,
       max: 2.4,
       step: 0.01,
     },
     particleSeparation: {
-      value: 1.4,
+      value: particleSeparationDefault,
       min: 0.7,
       max: 2.5,
       step: 0.01,
@@ -117,7 +136,7 @@ export default function App() {
     },
     cityGlowColor: '#56b8ff',
     cityGlowSize: {
-      value: 1,
+      value: 0.57,
       min: 0.35,
       max: 2.2,
       step: 0.01,
@@ -172,27 +191,72 @@ export default function App() {
     },
   });
 
-  const applyRotation = (updater: (current: SceneRotation) => SceneRotation) => {
+  const shellStyle = {
+    '--hero-gradient-color': heroGradientColor,
+    '--hero-gradient-length': `${heroGradientLength}%`,
+  } as CSSProperties;
+
+  const applyRotation = useCallback((updater: (current: SceneRotation) => SceneRotation) => {
     setRotation((current) => {
       const next = updater(current);
       rotationRef.current = next;
       return next;
     });
-  };
+  }, []);
 
-  const stopInertia = () => {
+  const stopInertia = useCallback(() => {
     if (inertiaFrameRef.current !== null) {
       window.cancelAnimationFrame(inertiaFrameRef.current);
       inertiaFrameRef.current = null;
     }
 
     inertiaLastTimeRef.current = null;
-  };
+  }, []);
+
+  const stopAutoRotate = useCallback(() => {
+    if (autoRotateFrameRef.current !== null) {
+      window.cancelAnimationFrame(autoRotateFrameRef.current);
+      autoRotateFrameRef.current = null;
+    }
+
+    autoRotateLastTimeRef.current = null;
+  }, []);
+
+  const startAutoRotate = useCallback(() => {
+    if (autoRotateFrameRef.current !== null || dragStateRef.current || inertiaFrameRef.current !== null) {
+      return;
+    }
+
+    const step = (time: number) => {
+      const lastTime = autoRotateLastTimeRef.current;
+      autoRotateLastTimeRef.current = time;
+
+      if (dragStateRef.current || inertiaFrameRef.current !== null) {
+        autoRotateFrameRef.current = null;
+        autoRotateLastTimeRef.current = null;
+        return;
+      }
+
+      if (lastTime !== null) {
+        const deltaSeconds = Math.max((time - lastTime) / 1000, 1 / 240);
+        applyRotation((current) => ({
+          x: current.x,
+          y: current.y + INTERACTION_CONFIG.idleAutoRotateSpeed * deltaSeconds,
+        }));
+      }
+
+      autoRotateFrameRef.current = window.requestAnimationFrame(step);
+    };
+
+    autoRotateFrameRef.current = window.requestAnimationFrame(step);
+  }, [applyRotation]);
 
   const startInertia = () => {
     if (inertiaFrameRef.current !== null) {
       return;
     }
+
+    stopAutoRotate();
 
     const step = (time: number) => {
       const lastTime = inertiaLastTimeRef.current;
@@ -225,6 +289,7 @@ export default function App() {
           applyRotation(() => ({ x: NATURAL_ROTATION_X, y: nextRotation.y }));
           inertiaFrameRef.current = null;
           inertiaLastTimeRef.current = null;
+          startAutoRotate();
           return;
         }
 
@@ -266,10 +331,24 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    startAutoRotate();
+
     return () => {
       stopInertia();
+      stopAutoRotate();
     };
-  }, []);
+  }, [startAutoRotate, stopAutoRotate, stopInertia]);
+
+  useEffect(() => {
+    const value = isEmbedMode ? 'true' : 'false';
+    document.documentElement.dataset.embed = value;
+    document.body.dataset.embed = value;
+
+    return () => {
+      delete document.documentElement.dataset.embed;
+      delete document.body.dataset.embed;
+    };
+  }, [isEmbedMode]);
 
   const updateBackgroundDrag = (clientX: number, clientY: number, timeStamp: number) => {
     const activeDrag = dragStateRef.current;
@@ -320,6 +399,7 @@ export default function App() {
     }
 
     inertiaVelocityRef.current = { ...ZERO_ROTATION };
+    startAutoRotate();
   };
 
   const startBackgroundDrag = (
@@ -330,8 +410,8 @@ export default function App() {
     timeStamp: number,
   ) => {
     stopInertia();
+    stopAutoRotate();
     inertiaVelocityRef.current = { ...ZERO_ROTATION };
-
 
     dragStateRef.current = {
       input,
@@ -445,8 +525,8 @@ export default function App() {
   };
 
   return (
-    <main className="app-shell">
-      <Leva flat titleBar={false} oneLineLabels />
+    <main className={`app-shell${isEmbedMode ? ' app-shell--embed' : ''}`} style={shellStyle}>
+      {!isEmbedMode ? <Leva flat titleBar oneLineLabels /> : null}
 
       <div
         ref={sceneFrameRef}
@@ -463,7 +543,7 @@ export default function App() {
       >
         <Canvas
           camera={{ position: [0, 0, 4.4], fov: 34 }}
-          dpr={[1, 1.75]}
+          dpr={[1, isMobileMode ? 1.2 : 1.75]}
           gl={{ antialias: true, alpha: true }}
         >
           <fog attach="fog" args={['#050816', 4.5, 9]} />

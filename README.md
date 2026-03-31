@@ -1,6 +1,6 @@
 ﻿# Particle Earth
 
-Single-page React Three Fiber experience that renders an interactive earth made entirely from particles. Land areas are populated from a real-world NOAA elevation raster, particle height follows actual terrain elevation, a Leva slider controls terrain-height exaggeration, the globe edge is defined by a Fresnel shell, hovering repels nearby particles based on mouse speed, and dragging the background rotates the earth.
+Single-page React Three Fiber experience that renders an interactive earth made entirely from particles. Land areas are populated from a real-world NOAA elevation raster, particle height follows actual terrain elevation, a Leva slider controls terrain-height exaggeration, the globe edge is defined by a Fresnel shell, the globe slowly idly rotates around its north-south axis, and dragging the background adds direct rotation plus inertial follow-through.
 
 ## Stack
 
@@ -44,6 +44,6 @@ npm run dev
 
 - `public/earth-elevation.png` is derived from NOAA's ETOPO1 bedrock global relief raster and is used for both land placement and normalized terrain height.
 - `scripts/generate_etopo_heightmap.py` converts the downloaded TIFF into an 8-bit land-only heightmap where ocean is `0` and positive land elevation is normalized to `1..255`.
-- The Leva panel exposes the terrain-height exaggeration value at runtime without affecting the hover or drag interaction model.
+- The Leva panel exposes the terrain-height exaggeration value at runtime without affecting the idle autorotation or drag interaction model.
 - `window.__particleEarthDebug` is populated in the browser to support smoke checks for particle count, displacement, rotation, and camera state.
 - Globe radius, point size, camera distance, and wide-screen horizontal offset are derived from the viewport so the whole earth remains visible and usable across browser sizes.

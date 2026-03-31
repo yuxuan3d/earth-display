@@ -185,7 +185,7 @@ export function ParticleGlobe({
 }: ParticleGlobeProps) {
   const geometryRef = useRef<THREE.BufferGeometry>(null);
   const particleBuffersRef = useRef<ParticleBuffers | null>(null);
-  const elevationTexture = useTexture('/earth-elevation.png');
+  const elevationTexture = useTexture(`${import.meta.env.BASE_URL}earth-elevation.png`);
   const blendSettings = resolveBlendSettings(particleBlendMode);
   const sampleCount = useMemo(
     () => resolveParticleSampleCount(PARTICLE_GLOBE_CONFIG.sampleCount, particleSeparation),

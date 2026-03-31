@@ -20,6 +20,7 @@ export const INTERACTION_CONFIG: InteractionConfig = {
   dragThreshold: 8,
   dragInertiaDamping: 2.4,
   minimumInertiaVelocity: 0.08,
+  idleAutoRotateSpeed: 0.04,
   axisReturnStrength: 5.4,
   axisReturnDamping: 3.8,
   axisReturnAngleThreshold: 0.003,

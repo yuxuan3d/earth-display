@@ -18,6 +18,7 @@ export type InteractionConfig = {
   dragThreshold: number;
   dragInertiaDamping: number;
   minimumInertiaVelocity: number;
+  idleAutoRotateSpeed: number;
   axisReturnStrength: number;
   axisReturnDamping: number;
   axisReturnAngleThreshold: number;

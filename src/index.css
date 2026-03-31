@@ -7,6 +7,8 @@
   --bg-planet: #4d63ff;
   --bg-glow: #56b8ff;
   --bg-accent: #8f5dff;
+  --hero-gradient-color: #0d3b8b;
+  --hero-gradient-length: 64%;
 }
 
 * {
@@ -28,18 +30,32 @@ body {
     linear-gradient(180deg, #071120 0%, #040916 52%, #02050e 100%);
 }
 
+body[data-embed='true'] {
+  overflow: hidden;
+}
+
+body[data-embed='true'] #leva__root,
+body[data-embed='true'] .app-shell > [class*='leva-c-'] {
+  display: none !important;
+}
+
 .app-shell {
   position: relative;
   min-height: 100vh;
   overflow: hidden;
   isolation: isolate;
   background:
+    radial-gradient(circle at 50% 42%, var(--hero-gradient-color) 0%, transparent var(--hero-gradient-length)),
     radial-gradient(circle at 50% 42%, rgba(86, 184, 255, 0.18), transparent 18%),
     radial-gradient(circle at 50% 42%, rgba(77, 99, 255, 0.2), transparent 34%),
     radial-gradient(circle at 24% 22%, rgba(86, 184, 255, 0.12), transparent 28%),
     radial-gradient(circle at 80% 18%, rgba(143, 93, 255, 0.14), transparent 26%),
     radial-gradient(circle at 50% 82%, rgba(5, 12, 34, 0.52), transparent 38%),
     linear-gradient(180deg, #081528 0%, #050a17 48%, #02050d 100%);
+}
+
+.app-shell--embed {
+  min-height: 100vh;
 }
 
 .app-shell::before {
@@ -71,9 +87,23 @@ body {
   height: 100vh;
   touch-action: none;
   z-index: 1;
+  isolation: isolate;
+}
+
+.scene-frame::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.15) 1px, transparent 1.25px);
+  background-size: 26px 26px;
+  background-position: center top;
 }
 
 .scene-frame canvas {
+  position: relative;
+  z-index: 1;
   display: block;
   width: 100%;
   height: 100%;
@@ -84,4 +114,11 @@ body {
 .scene-frame.is-dragging canvas,
 .scene-frame canvas:active {
   cursor: grabbing;
+}
+
+@media (max-width: 640px) {
+  body[data-embed='true'] #leva__root,
+  body[data-embed='true'] .app-shell > [class*='leva-c-'] {
+    display: none !important;
+  }
 }

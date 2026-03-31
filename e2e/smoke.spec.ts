@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { PARTICLE_GLOBE_CONFIG } from '../src/config';
 import { getProjectedGlobeCircle, getResponsiveSceneMetrics } from '../src/lib/sceneLayout';
 
-test('renders the particle earth and allows drag rotation from the globe surface', async ({ page }) => {
+test('renders the particle earth, idly rotates, and allows drag rotation from the globe surface', async ({ page }) => {
   await page.goto('/');
   await page.waitForFunction(() => {
     return Boolean(window.__particleEarthDebug?.particleCount);
@@ -11,6 +11,10 @@ test('renders the particle earth and allows drag rotation from the globe surface
   const initial = await page.evaluate(() => window.__particleEarthDebug);
   expect(initial?.particleCount ?? 0).toBeGreaterThan(1000);
   expect(initial?.cityBeaconCount ?? 0).toBeGreaterThan(10);
+  await page.waitForTimeout(350);
+
+  const afterIdleRotation = await page.evaluate(() => window.__particleEarthDebug);
+  expect(afterIdleRotation?.rotationY).not.toBeCloseTo(initial?.rotationY ?? 0, 4);
 
   if (process.env.PLAYWRIGHT_CAPTURE === '1') {
     await page.waitForTimeout(800);
@@ -41,7 +45,7 @@ test('renders the particle earth and allows drag rotation from the globe surface
 
   const afterHover = await page.evaluate(() => window.__particleEarthDebug);
   expect(afterHover?.averageDisplacement ?? 0).toBe(0);
-  expect(afterHover?.rotationY).toBeCloseTo(initial?.rotationY ?? 0, 5);
+  expect(afterHover?.rotationY).not.toBeCloseTo(afterIdleRotation?.rotationY ?? 0, 4);
 
   await page.mouse.move(projectedGlobe.centerX, projectedGlobe.centerY);
   await page.mouse.down();
@@ -53,7 +57,7 @@ test('renders the particle earth and allows drag rotation from the globe surface
 
   const afterEarthDrag = await page.evaluate(() => window.__particleEarthDebug);
   expect(afterEarthDrag?.rotationY).not.toBeCloseTo(
-    afterHover?.rotationY ?? initial?.rotationY ?? 0,
+    afterHover?.rotationY ?? afterIdleRotation?.rotationY ?? initial?.rotationY ?? 0,
     4,
   );
 
