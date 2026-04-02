@@ -1,7 +1,9 @@
+import * as THREE from 'three';
 import {
   buildParticleBuffers,
   calculateDisplacementStrength,
   isLandAtUv,
+  latLonToFocusRotation,
   latLonToPoint,
   pointToUv,
   sampleMaskPixel,
@@ -51,6 +53,16 @@ describe('earthMath helpers', () => {
     expect(roundVector(latLonToPoint(0, 0, 1).toArray())).toEqual([1, 0, 0]);
     expect(roundVector(latLonToPoint(0, 90, 1).toArray())).toEqual([0, 0, -1]);
     expect(roundVector(latLonToPoint(90, 45, 1).toArray())).toEqual([0, 1, 0]);
+  });
+
+  it('derives a rotation that brings Singapore to the front of the globe', () => {
+    const singaporePoint = latLonToPoint(1.3521, 103.8198, 1);
+    const focusRotation = latLonToFocusRotation(1.3521, 103.8198);
+    const focusedPoint = singaporePoint.applyEuler(new THREE.Euler(focusRotation.x, focusRotation.y, 0));
+
+    expect(Math.abs(focusedPoint.x)).toBeLessThan(0.001);
+    expect(Math.abs(focusedPoint.y)).toBeLessThan(0.001);
+    expect(focusedPoint.z).toBeGreaterThan(0.999);
   });
 
   it('samples the elevation pixel using wrapped u coordinates', () => {

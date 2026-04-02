@@ -9,6 +9,7 @@ import { Leva, useControls } from 'leva';
 import { EarthScene } from './components/EarthScene';
 import type { ParticleBlendMode } from './components/ParticleGlobe';
 import { INTERACTION_CONFIG, PARTICLE_GLOBE_CONFIG } from './config';
+import { latLonToFocusRotation } from './lib/earthMath';
 import type { SceneRotation } from './types';
 
 type SceneFrameSize = {
@@ -28,7 +29,11 @@ type ActiveDrag = {
   };
 };
 
-const INITIAL_ROTATION: SceneRotation = { x: -0.18, y: 1.2 };
+const SINGAPORE_COORDINATES = { latitude: 1.3521, longitude: 103.8198 };
+const INITIAL_ROTATION: SceneRotation = latLonToFocusRotation(
+  SINGAPORE_COORDINATES.latitude,
+  SINGAPORE_COORDINATES.longitude,
+);
 const NATURAL_ROTATION_X = INITIAL_ROTATION.x;
 const EMPTY_FRAME_SIZE: SceneFrameSize = { width: 0, height: 0 };
 const ZERO_ROTATION: SceneRotation = { x: 0, y: 0 };

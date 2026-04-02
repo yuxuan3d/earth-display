@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { MaskImageData, ParticleGlobeConfig, Vector3Like } from '../types';
+import type { MaskImageData, ParticleGlobeConfig, SceneRotation, Vector3Like } from '../types';
 
 export type ParticleBuffers = {
   positions: Float32Array;
@@ -42,6 +42,17 @@ export function latLonToPoint(
     Math.sin(latitudeRadians) * radius,
     -Math.sin(longitudeRadians) * cosLatitude * radius,
   );
+}
+
+export function latLonToFocusRotation(latitude: number, longitude: number): SceneRotation {
+  return {
+    x: THREE.MathUtils.degToRad(latitude),
+    y:
+      THREE.MathUtils.euclideanModulo(
+        -Math.PI / 2 - THREE.MathUtils.degToRad(longitude) + Math.PI,
+        Math.PI * 2,
+      ) - Math.PI,
+  };
 }
 
 export function pointToUv(point: Vector3Like) {
