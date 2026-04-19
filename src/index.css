@@ -116,9 +116,62 @@ body[data-embed='true'] .app-shell > [class*='leva-c-'] {
   cursor: grabbing;
 }
 
+.project-signal-label {
+  max-width: 12.5rem;
+  min-height: 34px;
+  padding: 0.2rem 0.1rem;
+  overflow: hidden;
+  border: 0;
+  border-bottom: 1px solid rgba(144, 213, 255, 0.28);
+  border-radius: 0;
+  background: transparent;
+  color: rgba(244, 247, 251, 0.68);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Roboto Mono", monospace;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  line-height: 1.2;
+  pointer-events: auto;
+  text-align: center;
+  text-transform: uppercase;
+  touch-action: manipulation;
+  box-shadow: none;
+  transition: border-color 160ms ease, color 160ms ease, opacity 160ms ease, transform 160ms ease;
+}
+
+.project-signal-label:hover,
+.project-signal-label:focus-visible {
+  border-bottom-color: rgba(144, 213, 255, 0.74);
+  color: rgba(244, 247, 251, 0.9);
+  transform: scale(1.04);
+}
+
+.project-signal-label:focus-visible {
+  outline: 2px solid rgba(144, 213, 255, 0.84);
+  outline-offset: 3px;
+}
+
+.project-signal-label span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 @media (max-width: 640px) {
   body[data-embed='true'] #leva__root,
   body[data-embed='true'] .app-shell > [class*='leva-c-'] {
     display: none !important;
+  }
+
+  .project-signal-label {
+    max-width: 7.5rem;
+    min-height: 30px;
+    font-size: 0.55rem;
+    letter-spacing: 0.13em;
   }
 }

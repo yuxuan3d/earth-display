@@ -1,10 +1,12 @@
 import * as THREE from 'three';
 import {
+  buildGreatCircleArc,
   buildParticleBuffers,
   calculateDisplacementStrength,
   isLandAtUv,
   latLonToFocusRotation,
   latLonToPoint,
+  latLonToSurfaceFrame,
   pointToUv,
   sampleMaskPixel,
   sampleTerrainHeight,
@@ -63,6 +65,39 @@ describe('earthMath helpers', () => {
     expect(Math.abs(focusedPoint.x)).toBeLessThan(0.001);
     expect(Math.abs(focusedPoint.y)).toBeLessThan(0.001);
     expect(focusedPoint.z).toBeGreaterThan(0.999);
+  });
+
+  it('builds a lifted great-circle arc between two coordinates', () => {
+    const start = { latitude: 1.3521, longitude: 103.8198 };
+    const end = { latitude: 35.6762, longitude: 139.6503 };
+    const radius = 1.12;
+    const arc = buildGreatCircleArc(start, end, radius, 0.18, 12);
+
+    expect(arc).toHaveLength(13);
+    expect(arc[0].distanceTo(latLonToPoint(start.latitude, start.longitude, radius))).toBeLessThan(0.00001);
+    expect(arc[12].distanceTo(latLonToPoint(end.latitude, end.longitude, radius))).toBeLessThan(0.00001);
+    expect(arc[6].length()).toBeGreaterThan(radius);
+  });
+
+  it('clamps great-circle arcs to at least two segments', () => {
+    const arc = buildGreatCircleArc(
+      { latitude: 1.3521, longitude: 103.8198 },
+      { latitude: -33.8688, longitude: 151.2093 },
+      1,
+      0.12,
+      0,
+    );
+
+    expect(arc).toHaveLength(3);
+  });
+
+  it('derives a surface frame aligned to the coordinate normal', () => {
+    const coordinate = { latitude: 1.3521, longitude: 103.8198 };
+    const frame = latLonToSurfaceFrame(coordinate, 1.2);
+    const transformedAxis = new THREE.Vector3(0, 1, 0).applyQuaternion(frame.quaternion);
+
+    expect(frame.position.length()).toBeCloseTo(1.2, 5);
+    expect(transformedAxis.distanceTo(frame.normal)).toBeLessThan(0.00001);
   });
 
   it('samples the elevation pixel using wrapped u coordinates', () => {

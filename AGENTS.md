@@ -117,11 +117,8 @@ A task is done when:
 - `.agent/CONTINUITY.md` is updated if the change materially affects goal/state/decisions.
 #### ParticleEarth container workflow
 
-- Use docker compose up -d to start the app container for local work.
-- Use docker compose exec app npm install for dependency changes when the container is already running.
-- Use docker compose exec app npm run build, 
-pm run lint, 
-pm run test:unit, and 
-pm run test:e2e for verification when Docker is available.
-- The compose setup mounts the repo into /app and uses a named volume for /app/node_modules.
+- Use `docker compose up -d` to start the app container for local work.
+- Use `docker compose exec app npm install` for dependency changes when the container is already running.
+- Use `docker compose exec app npm run build`, `docker compose exec app npm run lint`, `docker compose exec app npm run test:unit`, and `docker compose exec app npm run test:e2e` for verification when Docker is available.
+- The compose setup mounts the repo into `/app` and uses a named volume for `/app/node_modules`.
 

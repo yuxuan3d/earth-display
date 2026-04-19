@@ -43,6 +43,11 @@ export type SceneRotation = {
   y: number;
 };
 
+export type ProjectThumbnail = {
+  slug: string;
+  title: string;
+};
+
 export type Vector3Like = {
   x: number;
   y: number;

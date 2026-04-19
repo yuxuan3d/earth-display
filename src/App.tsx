@@ -10,7 +10,9 @@ import { EarthScene } from './components/EarthScene';
 import type { ParticleBlendMode } from './components/ParticleGlobe';
 import { INTERACTION_CONFIG, PARTICLE_GLOBE_CONFIG } from './config';
 import { latLonToFocusRotation } from './lib/earthMath';
-import type { SceneRotation } from './types';
+import { setDebugState } from './lib/debug';
+import { getVisibleProjectThumbnails } from './lib/projectThumbnails';
+import type { ProjectThumbnail, SceneRotation } from './types';
 
 type SceneFrameSize = {
   width: number;
@@ -37,6 +39,46 @@ const INITIAL_ROTATION: SceneRotation = latLonToFocusRotation(
 const NATURAL_ROTATION_X = INITIAL_ROTATION.x;
 const EMPTY_FRAME_SIZE: SceneFrameSize = { width: 0, height: 0 };
 const ZERO_ROTATION: SceneRotation = { x: 0, y: 0 };
+const PROJECT_THUMBNAILS_MESSAGE = 'particle-earth:project-thumbnails';
+const OPEN_PROJECT_MESSAGE = 'particle-earth:open-project';
+const PROJECT_THUMBNAIL_BUTTON_SELECTOR = '[data-project-thumbnail-button="true"]';
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function normalizeProjectThumbnails(value: unknown): ProjectThumbnail[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item) => {
+    if (!isRecord(item)) {
+      return [];
+    }
+
+    const { slug, title } = item;
+    if (typeof slug !== 'string' || typeof title !== 'string') {
+      return [];
+    }
+
+    const normalizedProject = {
+      slug: slug.trim(),
+      title: title.trim(),
+    };
+
+    return normalizedProject.slug && normalizedProject.title
+      ? [normalizedProject]
+      : [];
+  });
+}
+
+function isProjectThumbnailEventTarget(target: EventTarget | null) {
+  return (
+    target instanceof Element &&
+    Boolean(target.closest(PROJECT_THUMBNAIL_BUTTON_SELECTOR))
+  );
+}
 
 export default function App() {
   const searchParams =
@@ -57,6 +99,7 @@ export default function App() {
   const [rotation, setRotation] = useState<SceneRotation>(INITIAL_ROTATION);
   const rotationRef = useRef<SceneRotation>({ ...INITIAL_ROTATION });
   const [isBackgroundDragging, setIsBackgroundDragging] = useState(false);
+  const [projectThumbnails, setProjectThumbnails] = useState<ProjectThumbnail[]>([]);
   const { heroGradientColor, heroGradientLength } = useControls('Hero Background', {
     heroGradientColor: '#0d3b8b',
     heroGradientLength: {
@@ -192,6 +235,20 @@ export default function App() {
       value: 1.56,
       min: 0.35,
       max: 3,
+      step: 0.01,
+    },
+  });
+  const { signalLayerOpacity, signalLayerSpeed } = useControls('Signal Layers', {
+    signalLayerOpacity: {
+      value: isMobileMode ? 0.58 : 0.74,
+      min: 0,
+      max: 1.5,
+      step: 0.01,
+    },
+    signalLayerSpeed: {
+      value: 0.82,
+      min: 0.1,
+      max: 1.1,
       step: 0.01,
     },
   });
@@ -355,6 +412,40 @@ export default function App() {
     };
   }, [isEmbedMode]);
 
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin && event.origin !== window.location.origin) {
+        return;
+      }
+
+      const data = event.data;
+      if (!isRecord(data) || data.type !== PROJECT_THUMBNAILS_MESSAGE) {
+        return;
+      }
+
+      setProjectThumbnails(normalizeProjectThumbnails(data.projects));
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  useEffect(() => {
+    setDebugState({
+      projectThumbnailCount: getVisibleProjectThumbnails(projectThumbnails, isMobileMode).length,
+    });
+  }, [isMobileMode, projectThumbnails]);
+
+  const handleProjectOpen = useCallback((slug: string) => {
+    window.parent.postMessage(
+      {
+        type: OPEN_PROJECT_MESSAGE,
+        slug,
+      },
+      window.location.origin,
+    );
+  }, []);
+
   const updateBackgroundDrag = (clientX: number, clientY: number, timeStamp: number) => {
     const activeDrag = dragStateRef.current;
     if (!activeDrag) {
@@ -428,6 +519,10 @@ export default function App() {
   };
 
   const handleSceneMouseDownCapture = (event: ReactMouseEvent<HTMLDivElement>) => {
+    if (isProjectThumbnailEventTarget(event.target)) {
+      return;
+    }
+
     if (!startBackgroundDrag('mouse', null, event.clientX, event.clientY, event.timeStamp)) {
       return;
     }
@@ -460,6 +555,10 @@ export default function App() {
 
   const handleScenePointerDownCapture = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (event.pointerType === 'mouse') {
+      return;
+    }
+
+    if (isProjectThumbnailEventTarget(event.target)) {
       return;
     }
 
@@ -555,6 +654,8 @@ export default function App() {
           <Suspense fallback={null}>
             <EarthScene
               rotation={rotation}
+              isInteracting={isBackgroundDragging}
+              isMobileMode={isMobileMode}
               terrainHeightScale={terrainHeight}
               glowDistance={glowDistance}
               glowStrength={glowStrength}
@@ -573,6 +674,10 @@ export default function App() {
               singaporeGlowStrength={singaporeGlowStrength}
               sunDirection={[sunX, sunY, sunZ]}
               sunFalloff={sunFalloff}
+              signalLayerOpacity={signalLayerOpacity}
+              signalLayerSpeed={signalLayerSpeed}
+              projectThumbnails={projectThumbnails}
+              onProjectOpen={handleProjectOpen}
             />
           </Suspense>
         </Canvas>

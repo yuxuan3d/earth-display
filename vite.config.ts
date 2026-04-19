@@ -6,6 +6,39 @@ export default defineConfig({
   plugins: [react()],
   build: {
     chunkSizeWarningLimit: 1200,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) {
+            return undefined;
+          }
+
+          const normalizedId = id.replace(/\\/g, '/');
+
+          if (normalizedId.includes('/three/')) {
+            return 'three-core';
+          }
+
+          if (
+            normalizedId.includes('/@react-three/fiber/') ||
+            normalizedId.includes('/@react-three/drei/') ||
+            normalizedId.includes('/three-stdlib/')
+          ) {
+            return 'three-react';
+          }
+
+          if (
+            normalizedId.includes('/leva/') ||
+            normalizedId.includes('/zustand/') ||
+            normalizedId.includes('/@radix-ui/')
+          ) {
+            return 'controls';
+          }
+
+          return 'vendor';
+        },
+      },
+    },
   },
   test: {
     include: ['src/**/*.test.ts'],

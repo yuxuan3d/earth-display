@@ -1,9 +1,15 @@
 import { expect, test } from '@playwright/test';
 import { PARTICLE_GLOBE_CONFIG } from '../src/config';
+import { PROJECT_SIGNALS, RND_SIGNALS, WORKFLOW_ORBITS } from '../src/data/portfolioSignals';
 import { getProjectedGlobeCircle, getResponsiveSceneMetrics } from '../src/lib/sceneLayout';
 
+const TEST_THUMBNAILS = PROJECT_SIGNALS.map((signal, index) => ({
+  slug: signal.slug,
+  title: `Project ${index + 1}`,
+}));
+
 test('renders the particle earth, idly rotates, and allows drag rotation from the globe surface', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?embed=1');
   await page.waitForFunction(() => {
     return Boolean(window.__particleEarthDebug?.particleCount);
   });
@@ -11,6 +17,46 @@ test('renders the particle earth, idly rotates, and allows drag rotation from th
   const initial = await page.evaluate(() => window.__particleEarthDebug);
   expect(initial?.particleCount ?? 0).toBeGreaterThan(1000);
   expect(initial?.cityBeaconCount ?? 0).toBeGreaterThan(10);
+  expect(initial?.projectSignalCount).toBe(PROJECT_SIGNALS.length);
+  expect(initial?.rndSignalCount).toBe(RND_SIGNALS.length);
+  expect(initial?.workflowOrbitCount).toBe(WORKFLOW_ORBITS.length);
+  expect(initial?.homeBasePulseCount).toBe(1);
+  expect(initial?.signalLayerInteracting).toBe(false);
+  expect(initial?.projectThumbnailCount).toBe(0);
+
+  await page.evaluate((projects) => {
+    const testWindow = window as Window & { __particleEarthLastOpen?: string | null };
+    testWindow.__particleEarthLastOpen = null;
+    window.addEventListener('message', (event) => {
+      if (event.data?.type === 'particle-earth:open-project') {
+        testWindow.__particleEarthLastOpen = event.data.slug;
+      }
+    });
+    window.postMessage(
+      {
+        type: 'particle-earth:project-thumbnails',
+        projects,
+      },
+      window.location.origin,
+    );
+  }, TEST_THUMBNAILS);
+  await page.waitForFunction(
+    (expectedCount) => window.__particleEarthDebug?.projectThumbnailCount === expectedCount,
+    TEST_THUMBNAILS.length,
+  );
+  const firstProjectButton = page.getByRole('button', { name: 'Open Project 1' });
+  await expect(firstProjectButton).toBeVisible();
+  await firstProjectButton.evaluate((button) => {
+    if (!(button instanceof HTMLButtonElement)) {
+      throw new Error('Expected the project thumbnail target to be a button.');
+    }
+
+    button.click();
+  });
+  await page.waitForFunction(() => {
+    const testWindow = window as Window & { __particleEarthLastOpen?: string | null };
+    return testWindow.__particleEarthLastOpen === 'cinder';
+  });
   await page.waitForTimeout(350);
 
   const afterIdleRotation = await page.evaluate(() => window.__particleEarthDebug);
@@ -52,7 +98,11 @@ test('renders the particle earth, idly rotates, and allows drag rotation from th
   await page.mouse.move(projectedGlobe.centerX + 140, projectedGlobe.centerY + 20, {
     steps: 8,
   });
+  await page.waitForFunction(() => window.__particleEarthDebug?.signalLayerInteracting === true);
+  const duringEarthDrag = await page.evaluate(() => window.__particleEarthDebug);
+  expect(duringEarthDrag?.signalLayerInteracting).toBe(true);
   await page.mouse.up();
+  await page.waitForFunction(() => window.__particleEarthDebug?.signalLayerInteracting === false);
   await page.waitForTimeout(150);
 
   const afterEarthDrag = await page.evaluate(() => window.__particleEarthDebug);

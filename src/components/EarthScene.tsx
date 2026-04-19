@@ -1,16 +1,24 @@
-import { useLayoutEffect, useMemo, useRef } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { CityBeacons } from './CityBeacons';
 import { FresnelShell } from './FresnelShell';
+import { HomeBasePulse } from './HomeBasePulse';
 import { PlanetBody } from './PlanetBody';
 import { ParticleGlobe, type ParticleBlendMode } from './ParticleGlobe';
+import { ProjectConstellations } from './ProjectConstellations';
+import { TransmissionLayer } from './TransmissionLayer';
+import { WorkflowOrbits } from './WorkflowOrbits';
 import { PARTICLE_GLOBE_CONFIG } from '../config';
+import { PROJECT_SIGNALS, RND_SIGNALS, WORKFLOW_ORBITS } from '../data/portfolioSignals';
+import { setDebugState } from '../lib/debug';
 import { getResponsiveSceneMetrics } from '../lib/sceneLayout';
-import type { SceneRotation } from '../types';
+import type { ProjectThumbnail, SceneRotation } from '../types';
 
 type EarthSceneProps = {
   rotation: SceneRotation;
+  isInteracting: boolean;
+  isMobileMode: boolean;
   terrainHeightScale: number;
   glowDistance: number;
   glowStrength: number;
@@ -29,12 +37,18 @@ type EarthSceneProps = {
   singaporeGlowStrength: number;
   sunDirection: [number, number, number];
   sunFalloff: number;
+  signalLayerOpacity: number;
+  signalLayerSpeed: number;
+  projectThumbnails: ProjectThumbnail[];
+  onProjectOpen: (slug: string) => void;
 };
 
 const DEFAULT_SUN_DIRECTION = new THREE.Vector3(-0.1, 0.11, 0.11).normalize();
 
 export function EarthScene({
   rotation,
+  isInteracting,
+  isMobileMode,
   terrainHeightScale,
   glowDistance,
   glowStrength,
@@ -53,6 +67,10 @@ export function EarthScene({
   singaporeGlowStrength,
   sunDirection,
   sunFalloff,
+  signalLayerOpacity,
+  signalLayerSpeed,
+  projectThumbnails,
+  onProjectOpen,
 }: EarthSceneProps) {
   const { camera, size } = useThree();
   const rigRef = useRef<THREE.Group>(null);
@@ -84,6 +102,16 @@ export function EarthScene({
     camera.position.set(0, 0, sceneMetrics.cameraZ);
     camera.updateProjectionMatrix();
   }, [camera, sceneMetrics.cameraZ]);
+
+  useEffect(() => {
+    setDebugState({
+      projectSignalCount: isMobileMode ? Math.min(2, PROJECT_SIGNALS.length) : PROJECT_SIGNALS.length,
+      rndSignalCount: RND_SIGNALS.length,
+      workflowOrbitCount: isMobileMode ? Math.min(1, WORKFLOW_ORBITS.length) : WORKFLOW_ORBITS.length,
+      homeBasePulseCount: 1,
+      signalLayerInteracting: isInteracting,
+    });
+  }, [isInteracting, isMobileMode]);
 
   useFrame(() => {
     if (rigRef.current) {
@@ -127,6 +155,32 @@ export function EarthScene({
           sizeVariance={cityGlowSizeVariance}
           singaporeGlowSize={singaporeGlowSize}
           singaporeGlowStrength={singaporeGlowStrength}
+        />
+        <HomeBasePulse
+          radius={sceneMetrics.radius}
+          opacityScale={signalLayerOpacity}
+          speedScale={signalLayerSpeed}
+        />
+        <ProjectConstellations
+          radius={sceneMetrics.radius}
+          isMobileMode={isMobileMode}
+          opacityScale={signalLayerOpacity}
+          speedScale={signalLayerSpeed}
+          projectThumbnails={projectThumbnails}
+          onProjectOpen={onProjectOpen}
+        />
+        <TransmissionLayer
+          radius={sceneMetrics.radius}
+          isInteracting={isInteracting}
+          isMobileMode={isMobileMode}
+          opacityScale={signalLayerOpacity}
+          speedScale={signalLayerSpeed}
+        />
+        <WorkflowOrbits
+          radius={sceneMetrics.radius}
+          isMobileMode={isMobileMode}
+          opacityScale={signalLayerOpacity}
+          speedScale={signalLayerSpeed}
         />
         <FresnelShell
           globeRadius={sceneMetrics.radius}

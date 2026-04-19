@@ -1,6 +1,11 @@
 import * as THREE from 'three';
 import type { MaskImageData, ParticleGlobeConfig, SceneRotation, Vector3Like } from '../types';
 
+export type LatLonCoordinate = {
+  latitude: number;
+  longitude: number;
+};
+
 export type ParticleBuffers = {
   positions: Float32Array;
   basePositions: Float32Array;
@@ -9,6 +14,14 @@ export type ParticleBuffers = {
   seeds: Float32Array;
   count: number;
 };
+
+export type SurfaceFrame = {
+  position: THREE.Vector3;
+  normal: THREE.Vector3;
+  quaternion: THREE.Quaternion;
+};
+
+const SURFACE_FRAME_BASE_AXIS = new THREE.Vector3(0, 1, 0);
 
 export function fibonacciSpherePoint(
   index: number,
@@ -53,6 +66,54 @@ export function latLonToFocusRotation(latitude: number, longitude: number): Scen
         Math.PI * 2,
       ) - Math.PI,
   };
+}
+
+export function latLonToSurfaceFrame(
+  coordinate: LatLonCoordinate,
+  radius: number,
+): SurfaceFrame {
+  const normal = latLonToPoint(coordinate.latitude, coordinate.longitude, 1).normalize();
+
+  return {
+    position: normal.clone().multiplyScalar(radius),
+    normal,
+    quaternion: new THREE.Quaternion().setFromUnitVectors(SURFACE_FRAME_BASE_AXIS, normal),
+  };
+}
+
+export function buildGreatCircleArc(
+  start: LatLonCoordinate,
+  end: LatLonCoordinate,
+  radius: number,
+  lift: number,
+  segments: number,
+): THREE.Vector3[] {
+  const safeSegments = Math.max(2, Math.floor(segments));
+  const startNormal = latLonToPoint(start.latitude, start.longitude, 1).normalize();
+  const endNormal = latLonToPoint(end.latitude, end.longitude, 1).normalize();
+  const angle = Math.acos(THREE.MathUtils.clamp(startNormal.dot(endNormal), -1, 1));
+  const sinAngle = Math.sin(angle);
+  const points: THREE.Vector3[] = [];
+
+  for (let index = 0; index <= safeSegments; index += 1) {
+    const t = index / safeSegments;
+    const arcLift = Math.sin(Math.PI * t) * lift;
+    let direction: THREE.Vector3;
+
+    if (sinAngle < 0.0001) {
+      direction = startNormal.clone().lerp(endNormal, t).normalize();
+    } else {
+      direction = startNormal
+        .clone()
+        .multiplyScalar(Math.sin((1 - t) * angle) / sinAngle)
+        .add(endNormal.clone().multiplyScalar(Math.sin(t * angle) / sinAngle))
+        .normalize();
+    }
+
+    points.push(direction.multiplyScalar(radius + arcLift));
+  }
+
+  return points;
 }
 
 export function pointToUv(point: Vector3Like) {

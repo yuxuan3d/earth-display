@@ -9,6 +9,12 @@ declare global {
       pointerHitEarth?: boolean;
       velocity?: number;
       cityBeaconCount?: number;
+      projectSignalCount?: number;
+      rndSignalCount?: number;
+      workflowOrbitCount?: number;
+      homeBasePulseCount?: number;
+      signalLayerInteracting?: boolean;
+      projectThumbnailCount?: number;
     };
   }
 }
