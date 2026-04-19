@@ -143,3 +143,38 @@ test('renders the particle earth, idly rotates, and allows drag rotation from th
     Math.abs((afterTiltDrag?.rotationX ?? naturalRotationX) - naturalRotationX),
   );
 });
+
+test('keeps mobile portfolio signals uncapped and tuned for phone density', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/?embed=1&mobile=1');
+  await page.waitForFunction(() => {
+    return Boolean(window.__particleEarthDebug?.particleCount);
+  });
+
+  const initial = await page.evaluate(() => window.__particleEarthDebug);
+  expect(initial?.projectSignalCount).toBe(PROJECT_SIGNALS.length);
+  expect(initial?.workflowOrbitCount).toBe(WORKFLOW_ORBITS.length);
+
+  await page.evaluate((projects) => {
+    window.postMessage(
+      {
+        type: 'particle-earth:project-thumbnails',
+        projects,
+      },
+      window.location.origin,
+    );
+  }, TEST_THUMBNAILS);
+  await page.waitForFunction(
+    (expectedCount) => window.__particleEarthDebug?.projectThumbnailCount === expectedCount,
+    TEST_THUMBNAILS.length,
+  );
+
+  await expect(page.getByRole('button', { name: /Open Project/ })).toHaveCount(
+    TEST_THUMBNAILS.length,
+  );
+
+  const dotBackground = await page.locator('[data-testid="scene-frame"]').evaluate((element) => {
+    return window.getComputedStyle(element, '::before').backgroundImage;
+  });
+  expect(dotBackground).toContain('0.075');
+});

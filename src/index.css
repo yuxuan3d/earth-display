@@ -169,9 +169,17 @@ body[data-embed='true'] .app-shell > [class*='leva-c-'] {
   }
 
   .project-signal-label {
-    max-width: 7.5rem;
-    min-height: 30px;
-    font-size: 0.55rem;
-    letter-spacing: 0.13em;
+    max-width: 5.8rem;
+    min-height: 26px;
+    padding: 0.12rem 0.06rem;
+    border-bottom-color: rgba(144, 213, 255, 0.22);
+    color: rgba(244, 247, 251, 0.58);
+    font-size: 0.48rem;
+    letter-spacing: 0.08em;
+  }
+
+  .scene-frame::before {
+    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.075) 0.85px, transparent 1.1px);
+    background-size: 32px 32px;
   }
 }

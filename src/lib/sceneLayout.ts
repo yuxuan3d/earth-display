@@ -33,6 +33,8 @@ export function getResponsiveSceneMetrics(
   const cameraZ = Number(
     (radius / (desiredViewportFraction * tanHalfFov * aspectFactor)).toFixed(4),
   );
+  const isNarrowPortraitMobile = safeViewport.width <= 430 && safeViewport.height > safeViewport.width;
+  const offsetY = isNarrowPortraitMobile ? Number((radius * 0.42).toFixed(4)) : 0;
 
   return {
     radius,
@@ -40,13 +42,14 @@ export function getResponsiveSceneMetrics(
     pointSize,
     cameraZ,
     offsetX: 0,
+    offsetY,
   };
 }
 
 export function getProjectedGlobeCircle(
   width: number,
   height: number,
-  metrics: Pick<ResponsiveSceneMetrics, 'radius' | 'shellRadius' | 'cameraZ' | 'offsetX'>,
+  metrics: Pick<ResponsiveSceneMetrics, 'radius' | 'shellRadius' | 'cameraZ' | 'offsetX' | 'offsetY'>,
 ): ProjectedGlobeCircle {
   const safeViewport = getSafeViewport(width, height);
   const tanHalfFov = Math.tan((CAMERA_FOV_DEGREES * Math.PI) / 360);
@@ -55,7 +58,7 @@ export function getProjectedGlobeCircle(
 
   return {
     centerX: Number((safeViewport.width / 2 + metrics.offsetX * pixelsPerWorldUnit).toFixed(2)),
-    centerY: Number((safeViewport.height / 2).toFixed(2)),
+    centerY: Number((safeViewport.height / 2 - metrics.offsetY * pixelsPerWorldUnit).toFixed(2)),
     radius: Number((visualRadius * pixelsPerWorldUnit).toFixed(2)),
   };
 }

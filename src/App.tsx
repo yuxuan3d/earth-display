@@ -239,7 +239,7 @@ export default function App() {
   });
   const { signalLayerOpacity, signalLayerSpeed } = useControls('Signal Layers', {
     signalLayerOpacity: {
-      value: isMobileMode ? 0.58 : 0.74,
+      value: isMobileMode ? 0.76 : 0.74,
       min: 0,
       max: 1.5,
       step: 0.01,

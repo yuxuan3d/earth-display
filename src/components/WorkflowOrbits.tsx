@@ -64,16 +64,16 @@ export function WorkflowOrbits({
   opacityScale,
   speedScale,
 }: WorkflowOrbitsProps) {
-  const visibleOrbits = isMobileMode ? WORKFLOW_ORBITS.slice(0, 1) : WORKFLOW_ORBITS;
+  const opacityMultiplier = isMobileMode ? 0.78 : 1;
 
   return (
     <group>
-      {visibleOrbits.map((orbit) => (
+      {WORKFLOW_ORBITS.map((orbit) => (
         <WorkflowOrbitRing
           key={orbit.id}
           orbit={orbit}
           radius={radius}
-          opacityScale={isMobileMode ? opacityScale * 0.55 : opacityScale}
+          opacityScale={opacityScale * opacityMultiplier}
           speedScale={speedScale}
         />
       ))}

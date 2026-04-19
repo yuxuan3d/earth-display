@@ -34,9 +34,9 @@ export function TransmissionLayer({
       })),
     [isMobileMode, radius],
   );
-  const lineOpacity = (isMobileMode ? 0.12 : 0.2) * opacityScale;
-  const pulseOpacity = (isMobileMode ? 0.42 : 0.62) * opacityScale;
-  const pulseSize = radius * (isMobileMode ? 0.006 : 0.0075);
+  const lineOpacity = (isMobileMode ? 0.18 : 0.2) * opacityScale;
+  const pulseOpacity = (isMobileMode ? 0.48 : 0.62) * opacityScale;
+  const pulseSize = radius * (isMobileMode ? 0.0064 : 0.0075);
 
   useFrame((_, delta) => {
     const target = isInteracting ? 1 : 0;

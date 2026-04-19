@@ -10,8 +10,9 @@ import { ProjectConstellations } from './ProjectConstellations';
 import { TransmissionLayer } from './TransmissionLayer';
 import { WorkflowOrbits } from './WorkflowOrbits';
 import { PARTICLE_GLOBE_CONFIG } from '../config';
-import { PROJECT_SIGNALS, RND_SIGNALS, WORKFLOW_ORBITS } from '../data/portfolioSignals';
+import { RND_SIGNALS, WORKFLOW_ORBITS } from '../data/portfolioSignals';
 import { setDebugState } from '../lib/debug';
+import { getVisibleProjectSignals } from '../lib/projectThumbnails';
 import { getResponsiveSceneMetrics } from '../lib/sceneLayout';
 import type { ProjectThumbnail, SceneRotation } from '../types';
 
@@ -105,9 +106,9 @@ export function EarthScene({
 
   useEffect(() => {
     setDebugState({
-      projectSignalCount: isMobileMode ? Math.min(2, PROJECT_SIGNALS.length) : PROJECT_SIGNALS.length,
+      projectSignalCount: getVisibleProjectSignals(isMobileMode).length,
       rndSignalCount: RND_SIGNALS.length,
-      workflowOrbitCount: isMobileMode ? Math.min(1, WORKFLOW_ORBITS.length) : WORKFLOW_ORBITS.length,
+      workflowOrbitCount: WORKFLOW_ORBITS.length,
       homeBasePulseCount: 1,
       signalLayerInteracting: isInteracting,
     });
@@ -117,7 +118,7 @@ export function EarthScene({
     if (rigRef.current) {
       const rotation = rotationRef.current;
       rigRef.current.rotation.set(rotation.x, rotation.y, 0);
-      rigRef.current.position.set(sceneMetrics.offsetX, 0, 0);
+      rigRef.current.position.set(sceneMetrics.offsetX, sceneMetrics.offsetY, 0);
     }
   });
 

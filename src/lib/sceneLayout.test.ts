@@ -17,12 +17,16 @@ describe('scene layout metrics', () => {
     expect(metrics.pointSize).toBeGreaterThan(0);
   });
 
-  it('keeps the globe centered on all viewports', () => {
+  it('keeps the globe horizontally centered and lifts narrow mobile layouts', () => {
     const desktop = getResponsiveSceneMetrics(1440, 900, PARTICLE_GLOBE_CONFIG);
     const mobile = getResponsiveSceneMetrics(390, 844, PARTICLE_GLOBE_CONFIG);
+    const tablet = getResponsiveSceneMetrics(768, 1024, PARTICLE_GLOBE_CONFIG);
 
     expect(desktop.offsetX).toBe(0);
     expect(mobile.offsetX).toBe(0);
+    expect(desktop.offsetY).toBe(0);
+    expect(tablet.offsetY).toBe(0);
+    expect(mobile.offsetY).toBeGreaterThan(0);
   });
 
   it('projects the globe circle from scene metrics', () => {
@@ -34,5 +38,6 @@ describe('scene layout metrics', () => {
     expect(desktopCircle.centerX).toBeCloseTo(720, 1);
     expect(desktopCircle.radius).toBeGreaterThan(0);
     expect(mobileCircle.centerX).toBeCloseTo(195, 1);
+    expect(mobileCircle.centerY).toBeLessThan(422);
   });
 });

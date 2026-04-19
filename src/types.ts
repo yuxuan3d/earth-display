@@ -30,6 +30,7 @@ export type ResponsiveSceneMetrics = {
   pointSize: number;
   cameraZ: number;
   offsetX: number;
+  offsetY: number;
 };
 
 export type ProjectedGlobeCircle = {

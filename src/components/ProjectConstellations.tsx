@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
-import { HOME_BASE, PROJECT_SIGNALS } from '../data/portfolioSignals';
+import { HOME_BASE } from '../data/portfolioSignals';
 import { buildGreatCircleArc } from '../lib/earthMath';
-import { getVisibleProjectThumbnails } from '../lib/projectThumbnails';
+import { getVisibleProjectSignals, getVisibleProjectThumbnails } from '../lib/projectThumbnails';
 import type { ProjectThumbnail } from '../types';
 import { ProjectSignalThumbnail } from './ProjectSignalThumbnail';
 import { SignalArcLine, TravelingSignalPulse } from './SignalArc';
@@ -29,7 +29,7 @@ export function ProjectConstellations({
   }, [isMobileMode, projectThumbnails]);
   const arcs = useMemo(
     () => {
-      const visibleSignals = isMobileMode ? PROJECT_SIGNALS.slice(0, 2) : PROJECT_SIGNALS;
+      const visibleSignals = getVisibleProjectSignals(isMobileMode);
 
       return visibleSignals.map((signal) => ({
         signal,
@@ -44,9 +44,9 @@ export function ProjectConstellations({
     },
     [isMobileMode, radius],
   );
-  const lineOpacity = (isMobileMode ? 0.16 : 0.26) * opacityScale;
-  const pulseOpacity = (isMobileMode ? 0.48 : 0.68) * opacityScale;
-  const pulseSize = radius * (isMobileMode ? 0.007 : 0.0085);
+  const lineOpacity = (isMobileMode ? 0.34 : 0.26) * opacityScale;
+  const pulseOpacity = (isMobileMode ? 0.58 : 0.68) * opacityScale;
+  const pulseSize = radius * (isMobileMode ? 0.0074 : 0.0085);
 
   return (
     <group>
