@@ -96,7 +96,6 @@ export default function App() {
   const autoRotateFrameRef = useRef<number | null>(null);
   const autoRotateLastTimeRef = useRef<number | null>(null);
   const [sceneFrameSize, setSceneFrameSize] = useState<SceneFrameSize>(EMPTY_FRAME_SIZE);
-  const [rotation, setRotation] = useState<SceneRotation>(INITIAL_ROTATION);
   const rotationRef = useRef<SceneRotation>({ ...INITIAL_ROTATION });
   const [isBackgroundDragging, setIsBackgroundDragging] = useState(false);
   const [projectThumbnails, setProjectThumbnails] = useState<ProjectThumbnail[]>([]);
@@ -259,11 +258,7 @@ export default function App() {
   } as CSSProperties;
 
   const applyRotation = useCallback((updater: (current: SceneRotation) => SceneRotation) => {
-    setRotation((current) => {
-      const next = updater(current);
-      rotationRef.current = next;
-      return next;
-    });
+    rotationRef.current = updater(rotationRef.current);
   }, []);
 
   const stopInertia = useCallback(() => {
@@ -653,7 +648,7 @@ export default function App() {
           <fog attach="fog" args={['#050816', 4.5, 9]} />
           <Suspense fallback={null}>
             <EarthScene
-              rotation={rotation}
+              rotationRef={rotationRef}
               isInteracting={isBackgroundDragging}
               isMobileMode={isMobileMode}
               terrainHeightScale={terrainHeight}

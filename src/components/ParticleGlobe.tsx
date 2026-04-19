@@ -9,6 +9,7 @@ import {
   extractMaskImageData,
   type ParticleBuffers,
 } from '../lib/earthMath';
+import type { SceneRotation } from '../types';
 
 export type ParticleBlendMode =
   | 'normal'
@@ -157,8 +158,7 @@ declare module '@react-three/fiber' {
 }
 
 type ParticleGlobeProps = {
-  rotationX: number;
-  rotationY: number;
+  rotationRef: { current: SceneRotation };
   cameraZ: number;
   radius: number;
   pointSize: number;
@@ -171,8 +171,7 @@ type ParticleGlobeProps = {
 };
 
 export function ParticleGlobe({
-  rotationX,
-  rotationY,
+  rotationRef,
   cameraZ,
   radius,
   pointSize,
@@ -229,11 +228,13 @@ export function ParticleGlobe({
       return;
     }
 
+    const rotation = rotationRef.current;
+
     setDebugState({
       particleCount: buffers.count,
       averageDisplacement: 0,
-      rotationX,
-      rotationY,
+      rotationX: rotation.x,
+      rotationY: rotation.y,
       cameraZ,
       pointerHitEarth: false,
       velocity: 0,

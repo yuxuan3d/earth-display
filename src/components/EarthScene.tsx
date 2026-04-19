@@ -16,7 +16,7 @@ import { getResponsiveSceneMetrics } from '../lib/sceneLayout';
 import type { ProjectThumbnail, SceneRotation } from '../types';
 
 type EarthSceneProps = {
-  rotation: SceneRotation;
+  rotationRef: { current: SceneRotation };
   isInteracting: boolean;
   isMobileMode: boolean;
   terrainHeightScale: number;
@@ -46,7 +46,7 @@ type EarthSceneProps = {
 const DEFAULT_SUN_DIRECTION = new THREE.Vector3(-0.1, 0.11, 0.11).normalize();
 
 export function EarthScene({
-  rotation,
+  rotationRef,
   isInteracting,
   isMobileMode,
   terrainHeightScale,
@@ -115,6 +115,7 @@ export function EarthScene({
 
   useFrame(() => {
     if (rigRef.current) {
+      const rotation = rotationRef.current;
       rigRef.current.rotation.set(rotation.x, rotation.y, 0);
       rigRef.current.position.set(sceneMetrics.offsetX, 0, 0);
     }
@@ -135,8 +136,7 @@ export function EarthScene({
           sunFalloff={sunFalloff}
         />
         <ParticleGlobe
-          rotationX={rotation.x}
-          rotationY={rotation.y}
+          rotationRef={rotationRef}
           cameraZ={sceneMetrics.cameraZ}
           radius={sceneMetrics.radius}
           pointSize={sceneMetrics.pointSize}
