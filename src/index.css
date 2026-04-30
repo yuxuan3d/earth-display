@@ -85,7 +85,7 @@ body[data-embed='true'] .app-shell > [class*='leva-c-'] {
   position: relative;
   width: 100vw;
   height: 100vh;
-  touch-action: none;
+  touch-action: pan-y;
   z-index: 1;
   isolation: isolate;
 }
@@ -163,6 +163,10 @@ body[data-embed='true'] .app-shell > [class*='leva-c-'] {
 }
 
 @media (max-width: 640px) {
+  .app-shell::before {
+    display: none;
+  }
+
   body[data-embed='true'] #leva__root,
   body[data-embed='true'] .app-shell > [class*='leva-c-'] {
     display: none !important;

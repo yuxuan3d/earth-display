@@ -23,6 +23,33 @@ test('renders the particle earth, idly rotates, and allows drag rotation from th
   expect(initial?.homeBasePulseCount).toBe(1);
   expect(initial?.signalLayerInteracting).toBe(false);
   expect(initial?.projectThumbnailCount).toBe(0);
+  expect(initial?.sceneActive).toBe(true);
+
+  await page.evaluate(() => {
+    window.postMessage(
+      {
+        type: 'particle-earth:visibility',
+        active: false,
+      },
+      window.location.origin,
+    );
+  });
+  await page.waitForFunction(() => window.__particleEarthDebug?.sceneActive === false);
+  const paused = await page.evaluate(() => window.__particleEarthDebug);
+  await page.waitForTimeout(250);
+  const afterPaused = await page.evaluate(() => window.__particleEarthDebug);
+  expect(afterPaused?.rotationY ?? 0).toBeCloseTo(paused?.rotationY ?? 0, 4);
+
+  await page.evaluate(() => {
+    window.postMessage(
+      {
+        type: 'particle-earth:visibility',
+        active: true,
+      },
+      window.location.origin,
+    );
+  });
+  await page.waitForFunction(() => window.__particleEarthDebug?.sceneActive === true);
 
   await page.evaluate((projects) => {
     const testWindow = window as Window & { __particleEarthLastOpen?: string | null };
@@ -177,4 +204,9 @@ test('keeps mobile portfolio signals uncapped and tuned for phone density', asyn
     return window.getComputedStyle(element, '::before').backgroundImage;
   });
   expect(dotBackground).toContain('0.075');
+
+  const touchAction = await page.locator('[data-testid="scene-frame"]').evaluate((element) => {
+    return window.getComputedStyle(element).touchAction;
+  });
+  expect(touchAction).toBe('pan-y');
 });

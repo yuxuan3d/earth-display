@@ -24,6 +24,7 @@ type DragInput = 'mouse' | 'pointer';
 type ActiveDrag = {
   input: DragInput;
   pointerId: number | null;
+  isActive: boolean;
   origin: {
     x: number;
     y: number;
@@ -41,7 +42,9 @@ const EMPTY_FRAME_SIZE: SceneFrameSize = { width: 0, height: 0 };
 const ZERO_ROTATION: SceneRotation = { x: 0, y: 0 };
 const PROJECT_THUMBNAILS_MESSAGE = 'particle-earth:project-thumbnails';
 const OPEN_PROJECT_MESSAGE = 'particle-earth:open-project';
+const SCENE_VISIBILITY_MESSAGE = 'particle-earth:visibility';
 const PROJECT_THUMBNAIL_BUTTON_SELECTOR = '[data-project-thumbnail-button="true"]';
+const DRAG_ACTIVATION_THRESHOLD_PX = 8;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -87,7 +90,7 @@ export default function App() {
   const isMobileMode = searchParams?.get('mobile') === '1';
   const particleOpacityDefault = isMobileMode ? 0.58 : 0.64;
   const particleSizeDefault = isMobileMode ? 1.9 : 2.4;
-  const particleSeparationDefault = isMobileMode ? 1.8 : 1.4;
+  const particleSeparationDefault = isMobileMode ? 2.05 : 1.4;
   const sceneFrameRef = useRef<HTMLDivElement>(null);
   const dragStateRef = useRef<ActiveDrag | null>(null);
   const inertiaVelocityRef = useRef<SceneRotation>({ ...ZERO_ROTATION });
@@ -95,8 +98,10 @@ export default function App() {
   const inertiaLastTimeRef = useRef<number | null>(null);
   const autoRotateFrameRef = useRef<number | null>(null);
   const autoRotateLastTimeRef = useRef<number | null>(null);
+  const isSceneActiveRef = useRef(true);
   const [sceneFrameSize, setSceneFrameSize] = useState<SceneFrameSize>(EMPTY_FRAME_SIZE);
   const rotationRef = useRef<SceneRotation>({ ...INITIAL_ROTATION });
+  const [isSceneActive, setIsSceneActive] = useState(true);
   const [isBackgroundDragging, setIsBackgroundDragging] = useState(false);
   const [projectThumbnails, setProjectThumbnails] = useState<ProjectThumbnail[]>([]);
   const { heroGradientColor, heroGradientLength } = useControls('Hero Background', {
@@ -280,11 +285,22 @@ export default function App() {
   }, []);
 
   const startAutoRotate = useCallback(() => {
-    if (autoRotateFrameRef.current !== null || dragStateRef.current || inertiaFrameRef.current !== null) {
+    if (
+      !isSceneActiveRef.current ||
+      autoRotateFrameRef.current !== null ||
+      dragStateRef.current ||
+      inertiaFrameRef.current !== null
+    ) {
       return;
     }
 
     const step = (time: number) => {
+      if (!isSceneActiveRef.current) {
+        autoRotateFrameRef.current = null;
+        autoRotateLastTimeRef.current = null;
+        return;
+      }
+
       const lastTime = autoRotateLastTimeRef.current;
       autoRotateLastTimeRef.current = time;
 
@@ -309,13 +325,19 @@ export default function App() {
   }, [applyRotation]);
 
   const startInertia = () => {
-    if (inertiaFrameRef.current !== null) {
+    if (!isSceneActiveRef.current || inertiaFrameRef.current !== null) {
       return;
     }
 
     stopAutoRotate();
 
     const step = (time: number) => {
+      if (!isSceneActiveRef.current) {
+        inertiaFrameRef.current = null;
+        inertiaLastTimeRef.current = null;
+        return;
+      }
+
       const lastTime = inertiaLastTimeRef.current;
       inertiaLastTimeRef.current = time;
 
@@ -388,13 +410,27 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    startAutoRotate();
+    isSceneActiveRef.current = isSceneActive;
+    setDebugState({ sceneActive: isSceneActive });
 
+    if (!isSceneActive) {
+      dragStateRef.current = null;
+      inertiaVelocityRef.current = { ...ZERO_ROTATION };
+      stopInertia();
+      stopAutoRotate();
+      return undefined;
+    }
+
+    startAutoRotate();
+    return undefined;
+  }, [isSceneActive, startAutoRotate, stopAutoRotate, stopInertia]);
+
+  useEffect(() => {
     return () => {
       stopInertia();
       stopAutoRotate();
     };
-  }, [startAutoRotate, stopAutoRotate, stopInertia]);
+  }, [stopAutoRotate, stopInertia]);
 
   useEffect(() => {
     const value = isEmbedMode ? 'true' : 'false';
@@ -414,11 +450,24 @@ export default function App() {
       }
 
       const data = event.data;
-      if (!isRecord(data) || data.type !== PROJECT_THUMBNAILS_MESSAGE) {
+      if (!isRecord(data)) {
         return;
       }
 
-      setProjectThumbnails(normalizeProjectThumbnails(data.projects));
+      if (data.type === PROJECT_THUMBNAILS_MESSAGE) {
+        setProjectThumbnails(normalizeProjectThumbnails(data.projects));
+        return;
+      }
+
+      if (data.type === SCENE_VISIBILITY_MESSAGE && typeof data.active === 'boolean') {
+        if (!data.active) {
+          dragStateRef.current = null;
+          inertiaVelocityRef.current = { ...ZERO_ROTATION };
+          setIsBackgroundDragging(false);
+        }
+
+        setIsSceneActive(data.active);
+      }
     };
 
     window.addEventListener('message', handleMessage);
@@ -443,7 +492,7 @@ export default function App() {
 
   const updateBackgroundDrag = (clientX: number, clientY: number, timeStamp: number) => {
     const activeDrag = dragStateRef.current;
-    if (!activeDrag) {
+    if (!activeDrag || !activeDrag.isActive) {
       return;
     }
 
@@ -479,6 +528,11 @@ export default function App() {
     dragStateRef.current = null;
     setIsBackgroundDragging(false);
 
+    if (!isSceneActiveRef.current) {
+      inertiaVelocityRef.current = { ...ZERO_ROTATION };
+      return;
+    }
+
     if (
       Math.abs(inertiaVelocityRef.current.x) >= INTERACTION_CONFIG.minimumInertiaVelocity ||
       Math.abs(inertiaVelocityRef.current.y) >= INTERACTION_CONFIG.minimumInertiaVelocity ||
@@ -500,6 +554,10 @@ export default function App() {
     clientY: number,
     timeStamp: number,
   ) => {
+    if (!isSceneActiveRef.current) {
+      return false;
+    }
+
     stopInertia();
     stopAutoRotate();
     inertiaVelocityRef.current = { ...ZERO_ROTATION };
@@ -507,6 +565,49 @@ export default function App() {
     dragStateRef.current = {
       input,
       pointerId,
+      isActive: true,
+      origin: { x: clientX, y: clientY, time: timeStamp },
+    };
+    setIsBackgroundDragging(true);
+    return true;
+  };
+
+  const startPendingPointerDrag = (
+    pointerId: number,
+    clientX: number,
+    clientY: number,
+    timeStamp: number,
+  ) => {
+    if (!isSceneActiveRef.current) {
+      return false;
+    }
+
+    dragStateRef.current = {
+      input: 'pointer',
+      pointerId,
+      isActive: false,
+      origin: { x: clientX, y: clientY, time: timeStamp },
+    };
+    return true;
+  };
+
+  const activatePendingPointerDrag = (
+    activeDrag: ActiveDrag,
+    clientX: number,
+    clientY: number,
+    timeStamp: number,
+  ) => {
+    if (!isSceneActiveRef.current) {
+      dragStateRef.current = null;
+      return false;
+    }
+
+    stopInertia();
+    stopAutoRotate();
+    inertiaVelocityRef.current = { ...ZERO_ROTATION };
+    dragStateRef.current = {
+      ...activeDrag,
+      isActive: true,
       origin: { x: clientX, y: clientY, time: timeStamp },
     };
     setIsBackgroundDragging(true);
@@ -557,21 +658,9 @@ export default function App() {
       return;
     }
 
-    if (
-      !startBackgroundDrag(
-        'pointer',
-        event.pointerId,
-        event.clientX,
-        event.clientY,
-        event.timeStamp,
-      )
-    ) {
+    if (!startPendingPointerDrag(event.pointerId, event.clientX, event.clientY, event.timeStamp)) {
       return;
     }
-
-    event.currentTarget.setPointerCapture(event.pointerId);
-    event.preventDefault();
-    event.stopPropagation();
   };
 
   const handleScenePointerMoveCapture = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -585,7 +674,29 @@ export default function App() {
       return;
     }
 
-    updateBackgroundDrag(event.clientX, event.clientY, event.timeStamp);
+    if (!activeDrag.isActive) {
+      const deltaX = event.clientX - activeDrag.origin.x;
+      const deltaY = event.clientY - activeDrag.origin.y;
+      const absX = Math.abs(deltaX);
+      const absY = Math.abs(deltaY);
+
+      if (Math.max(absX, absY) < DRAG_ACTIVATION_THRESHOLD_PX) {
+        return;
+      }
+
+      if (absY > absX) {
+        dragStateRef.current = null;
+        return;
+      }
+
+      event.currentTarget.setPointerCapture(event.pointerId);
+      if (!activatePendingPointerDrag(activeDrag, event.clientX, event.clientY, event.timeStamp)) {
+        return;
+      }
+    } else {
+      updateBackgroundDrag(event.clientX, event.clientY, event.timeStamp);
+    }
+
     event.preventDefault();
     event.stopPropagation();
   };
@@ -598,6 +709,11 @@ export default function App() {
       activeDrag.input !== 'pointer' ||
       activeDrag.pointerId !== event.pointerId
     ) {
+      return;
+    }
+
+    if (!activeDrag.isActive) {
+      dragStateRef.current = null;
       return;
     }
 
@@ -641,9 +757,10 @@ export default function App() {
         onLostPointerCapture={handleSceneLostPointerCapture}
       >
         <Canvas
+          frameloop={isSceneActive ? 'always' : 'demand'}
           camera={{ position: [0, 0, 4.4], fov: 34 }}
-          dpr={[1, isMobileMode ? 1.2 : 1.75]}
-          gl={{ antialias: true, alpha: true }}
+          dpr={isMobileMode ? [1, 1] : [1, 1.75]}
+          gl={{ antialias: !isMobileMode, alpha: true, powerPreference: 'high-performance' }}
         >
           <fog attach="fog" args={['#050816', 4.5, 9]} />
           <Suspense fallback={null}>

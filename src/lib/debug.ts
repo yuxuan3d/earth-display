@@ -15,6 +15,7 @@ declare global {
       homeBasePulseCount?: number;
       signalLayerInteracting?: boolean;
       projectThumbnailCount?: number;
+      sceneActive?: boolean;
     };
   }
 }
